@@ -1,5 +1,3 @@
-
-
 using System.Collections.Generic;
 using Core.Singleton;
 using UnityEngine;

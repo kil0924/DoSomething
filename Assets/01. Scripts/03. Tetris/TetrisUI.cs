@@ -75,7 +75,6 @@ public class TetrisUI : MonoBehaviour
         panelPause.SetActive(false);
     }
 
-
     public void UpdateTime(float time)
     {
         textTime.text = $"Time : {time:0.00}s";
