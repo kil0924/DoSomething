@@ -130,10 +130,15 @@ public class Match3State_Play : Match3State_Base
         base.OnEnter();
         _isPause = true;
         _map.MakeMapTest();
-        _map.SetOnClick((x, y) =>
+        // _map.SetOnClick((x, y) =>
+        // {
+        //     if(_isPause == false)
+        //         ClickCell(x, y);
+        // });
+        _map.SetOnDrop((int x, int y, int dirX, int dirY) =>
         {
             if(_isPause == false)
-                ClickCell(x, y);
+                SwapCell(x,y,dirX,dirY);
         });
         _map.StartCoroutine(FindMatch3(null));
     }
@@ -180,6 +185,7 @@ public class Match3State_Play : Match3State_Base
     }
 
     private Match3Cell _curCell;
+    private Match3Cell _otherCell;
 
     private void ClickCell(int x, int y)
     {
@@ -215,9 +221,41 @@ public class Match3State_Play : Match3State_Base
         }
     }
 
-    private float _dropTime = 0.3f;
-    private IEnumerator FindMatch3(Action onFinish)
+    private void SwapCell(int x, int y, int dirX, int dirY)
     {
+        _curCell = _map[x, y];
+        var otherCell = _map[x + dirX, y + dirY];
+        if (otherCell == null)
+        {
+            _curCell = null;
+            return;
+        }
+
+        _otherCell = otherCell;
+        var t = _curCell.type;
+        _curCell.SetType(_otherCell.type);
+        _otherCell.SetType(t);
+
+        _map.StartCoroutine(FindMatch3((matchCount)=>
+        {
+            if (matchCount == 0)
+            {
+                RestoreCell();
+            }
+        }));
+    }
+
+    private void RestoreCell()
+    {
+        var t = _curCell.type;
+        _curCell.SetType(_otherCell.type);
+        _otherCell.SetType(t);
+    }
+
+    private float _dropTime = 0.3f;
+    private IEnumerator FindMatch3(Action<int> onFinish)
+    {
+        int tt = 0;
         _isPause = true;
         while (true)
         {
@@ -351,9 +389,11 @@ public class Match3State_Play : Match3State_Base
 
             if (t == 0)
                 break;
+            else
+                tt += t;
         }
         _isPause = false;
-        onFinish?.Invoke();
+        onFinish?.Invoke(tt);
     }
 }
 

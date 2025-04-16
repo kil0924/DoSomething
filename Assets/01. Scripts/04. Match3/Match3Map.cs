@@ -25,6 +25,9 @@ public class Match3Map : MonoBehaviour
     [SerializeField]
     private GridLayoutGroup _gridLayoutGroup;
     
+    [SerializeField]
+    private ContentSizeFitter _contentSizeFitter;
+    
     public void MakeMap(int width, int height)
     {
         ClearMap();
@@ -33,6 +36,9 @@ public class Match3Map : MonoBehaviour
         _height = height;
         
         cells = new Match3Cell[width, height];
+
+        _contentSizeFitter.enabled = true;
+        _gridLayoutGroup.enabled = true;
         
         _gridLayoutGroup.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
         _gridLayoutGroup.constraintCount = _width;
@@ -50,11 +56,27 @@ public class Match3Map : MonoBehaviour
                 }
                 cell.Init(x, y);
                 cell.transform.SetParent(_gridLayoutGroup.transform);
-                cell.SetOnClick(OnClick);
+                cell.SetOnDrop(OnDrop);
                 cells[x, y] = cell;
             }
         }
     }
+    void OnEnable()
+    {
+        Canvas.willRenderCanvases += OnAfterLayout;
+    }
+
+    void OnDisable()
+    {
+        Canvas.willRenderCanvases -= OnAfterLayout;
+    }
+
+    void OnAfterLayout()
+    {
+        _contentSizeFitter.enabled = false;
+        _gridLayoutGroup.enabled = false;
+    }
+    
     public int widthTest = 5;
     public int heightTest = 5;
     [ContextMenu( "MakeMapTest" )]
@@ -81,5 +103,15 @@ public class Match3Map : MonoBehaviour
     private void OnClick(int x, int y)
     {
         onClick?.Invoke(x, y);
+    }
+    
+    private Action<int, int, int, int> onDrop;
+    public void SetOnDrop(Action<int, int, int, int> onDrop)
+    {
+        this.onDrop = onDrop;
+    }
+    private void OnDrop(int x, int y, int dirX, int dirY)
+    {
+        onDrop?.Invoke(x, y, dirX, dirY);
     }
 }

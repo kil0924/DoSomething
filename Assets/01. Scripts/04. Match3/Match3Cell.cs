@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using Random = UnityEngine.Random;
 
@@ -15,7 +16,7 @@ public enum Match3CellType
     G,
     End,
 }
-public class Match3Cell : MonoBehaviour
+public class Match3Cell : MonoBehaviour, IDragHandler, IPointerDownHandler, IPointerUpHandler
 {
     public Image cellImage;
     public Image effectImage;
@@ -103,5 +104,99 @@ public class Match3Cell : MonoBehaviour
         yield return new WaitForSeconds(0.1f);
         effectImage.gameObject.SetActive(false);
         onFinish?.Invoke();
+    }
+
+    private Vector2 _startPos;
+    private bool _isDrag;
+    private RectTransform rectTransform;
+    private Vector2 _originPos;
+    private int _siblingIndex;
+    private float _threshold = 1f;
+    private float _maxDelta = 20f;
+    private Vector2 _dragDir;
+    private float _dragValidThreshold = 5f;
+    private bool _dragValid;
+    public void OnPointerDown(PointerEventData eventData)
+    {
+        _isDrag = true;
+        _startPos = eventData.position;
+        rectTransform = GetComponent<RectTransform>();
+        _originPos = rectTransform.anchoredPosition;
+        _siblingIndex = transform.GetSiblingIndex();
+        transform.SetAsLastSibling();
+        ActiveBorder(true);
+        _dragDir = Vector2.zero;
+        _dragValid = false;
+    }
+    
+    public void OnDrag(PointerEventData eventData)
+    {
+        if (_isDrag == false) return;
+        
+        var delta = eventData.position - _startPos;
+        if (Mathf.Abs(delta.x) < _threshold && Mathf.Abs(delta.y) < _threshold) return;
+
+        if (_dragDir == Vector2.zero)
+        {
+            if (Mathf.Abs(delta.x) > Mathf.Abs(delta.y))
+            {
+                _dragDir = new Vector2(delta.x > 0 ? 1 : -1, 0);
+            }
+            else
+            {
+                _dragDir = new Vector2(0, delta.y > 0 ? 1 : -1);
+            }
+        }
+        else
+        {
+            if (_dragDir.x > 0)
+            {
+                delta.x = Mathf.Clamp(delta.x, 0, _maxDelta);
+                delta.y = 0;
+            }
+
+            if (_dragDir.x < 0)
+            {
+                delta.x = Mathf.Clamp(delta.x, -_maxDelta, 0);
+                delta.y = 0;
+            }
+
+            if (_dragDir.y > 0)
+            {
+                delta.y = Mathf.Clamp(delta.y, 0, _maxDelta);
+                delta.x = 0;
+            }
+
+            if (_dragDir.y < 0)
+            {
+                delta.y = Mathf.Clamp(delta.y, -_maxDelta, 0);
+                delta.x = 0;
+            }
+        }
+        
+        rectTransform.anchoredPosition = delta + _originPos;
+    }
+    private Action<int, int, int, int> onDrop;
+    public void SetOnDrop(Action<int, int, int, int> onDrop)
+    {
+        this.onDrop = onDrop;
+    }
+    public void OnPointerUp(PointerEventData eventData)
+    {
+        var delta = eventData.position - _startPos;
+        if (Mathf.Abs(delta.x) >= _dragValidThreshold || Mathf.Abs(delta.y) >= _dragValidThreshold)
+            _dragValid = true;
+        else
+            _dragValid = false;
+        
+        _isDrag = false;
+        rectTransform.anchoredPosition = _originPos;
+        transform.SetSiblingIndex(_siblingIndex);
+        ActiveBorder(false);
+
+        if (_dragValid)
+        {
+            onDrop?.Invoke(x, y, (int)_dragDir.x, (int)_dragDir.y);
+        }
     }
 }
