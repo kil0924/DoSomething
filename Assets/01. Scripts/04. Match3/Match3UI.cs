@@ -74,7 +74,7 @@ public class Match3UI : MonoBehaviour
 
     public void UpdateTime(float time)
     {
-        textTime.text = $"Time : {time:0.00}s remain";
+        textTime.text = $"Time : {time:0.00}s";
     }
     public void UpdateScore(int score)
     {

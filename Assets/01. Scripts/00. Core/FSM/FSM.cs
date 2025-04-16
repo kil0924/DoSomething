@@ -100,8 +100,6 @@ namespace Core.FSM
         [SerializeField, ReadOnly]
         private float _stateTime;
         public float StateTime => _stateTime;
-
-        
         
         public virtual void OnEnter()
         {

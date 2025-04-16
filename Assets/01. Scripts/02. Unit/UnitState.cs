@@ -43,7 +43,7 @@ public class UnitStateManager : FSM<UnitState>
 
 public class UnitState_Init : FSMState<UnitState>
 {
-    public new UnitStateManager owner { get; set; }
+    public UnitStateManager owner { get; set; }
     public UnitState_Init(UnitStateManager owner) : base(owner, UnitState.Init)
     {
         this.owner = owner;
@@ -51,7 +51,7 @@ public class UnitState_Init : FSMState<UnitState>
 }
 public class UnitState_Idle : FSMState<UnitState>
 {
-    public new UnitStateManager owner { get; set; }
+    public UnitStateManager owner { get; set; }
     public UnitState_Idle(UnitStateManager owner) : base(owner, UnitState.Idle)
     {
         this.owner = owner;
@@ -59,7 +59,7 @@ public class UnitState_Idle : FSMState<UnitState>
 }
 public class UnitState_Move : FSMState<UnitState>
 {
-    public new UnitStateManager owner { get; set; }
+    public UnitStateManager owner { get; set; }
 
     public UnitState_Move(UnitStateManager owner) : base(owner, UnitState.Move)
     {
@@ -69,7 +69,7 @@ public class UnitState_Move : FSMState<UnitState>
 
 public class UnitState_Attack : FSMState<UnitState>
 {
-    public new UnitStateManager owner { get; set; }
+    public UnitStateManager owner { get; set; }
 
     public UnitState_Attack(UnitStateManager owner) : base(owner, UnitState.Attack)
     {
@@ -79,7 +79,7 @@ public class UnitState_Attack : FSMState<UnitState>
 
 public class UnitState_Death : FSMState<UnitState>
 {
-    public new UnitStateManager owner { get; set; }
+    public UnitStateManager owner { get; set; }
 
     public UnitState_Death(UnitStateManager owner) : base(owner, UnitState.Death)
     {
