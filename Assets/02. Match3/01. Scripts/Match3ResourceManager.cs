@@ -17,7 +17,7 @@ public class Match3ResourceManager : ResourceManagerBase<Match3ResourceManager>
         }
         else
         {
-            var go = GetResource("Match3/Cell");
+            var go = Instantiate(GetPrefab("Match3/Cell"));
             if (go != null)
             {
                 cell = go.GetComponent<Match3Cell>();

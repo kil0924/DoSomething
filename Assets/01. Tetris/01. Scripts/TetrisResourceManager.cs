@@ -18,7 +18,7 @@ public class TetrisResourceManager : ResourceManagerBase<TetrisResourceManager>
         }
         else
         {
-            var go = GetResource("Tetris/Cell");
+            var go = Instantiate(GetPrefab("Tetris/Cell"));
             if (go != null)
             {
                 cell = go.GetComponent<TetrisCell>();
