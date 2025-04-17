@@ -1,15 +1,14 @@
 namespace Core.Random
 {
-    using System.Collections.Generic;
     using Random = System.Random;
 
-    public class BattleRandom
+    public class CustomRandom
     {
         private int seed;
         private Random random;
         public int randomCount;
     
-        public BattleRandom(int seed)
+        public CustomRandom(int seed)
         {
             this.seed = seed;
             random = new Random(seed);
@@ -43,7 +42,5 @@ namespace Core.Random
             randomCount++;
             return (float)value;
         }
-    
-        public T GetRandom<T>(List<T> list) => list[Range(0, list.Count)];
     }
 }
