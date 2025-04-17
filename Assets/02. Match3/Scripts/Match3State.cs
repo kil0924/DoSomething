@@ -183,6 +183,10 @@ public class Match3State_Play : Match3State_Base
 
     private void UpdatePlay(float deltaTime)
     {
+        if (StateTime >= owner.gameInfo.timeLimit)
+        {
+            SetNextState(Match3State.Result);
+        }
     }
 
     private Match3Cell _curCell;

@@ -75,6 +75,7 @@ public class Match3UI : MonoBehaviour
 
     public void UpdateTime(float time)
     {
+        time = Mathf.Max(0, time);
         textTime.text = $"Time : {time:0.00}s";
     }
     public void UpdateScore(int score)
