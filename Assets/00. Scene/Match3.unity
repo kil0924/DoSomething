@@ -305,8 +305,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _gridLayoutGroup: {fileID: 201291729}
-  widthTest: 10
-  heightTest: 10
+  _contentSizeFitter: {fileID: 201291730}
+  widthTest: 5
+  heightTest: 5
+  checkCount: 0
 --- !u!1 &201291727
 GameObject:
   m_ObjectHideFlags: 0
@@ -2310,6 +2312,8 @@ MonoBehaviour:
   btnExit: {fileID: 748107528}
   textResultScore: {fileID: 259562381}
   btnFinish: {fileID: 413064855}
+  raycaster: {fileID: 1308764120}
+  eventSystem: {fileID: 563821221}
 --- !u!1 &1390685573
 GameObject:
   m_ObjectHideFlags: 0
@@ -3442,7 +3446,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 0}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:

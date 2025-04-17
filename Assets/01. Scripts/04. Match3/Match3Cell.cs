@@ -7,6 +7,7 @@ using Random = UnityEngine.Random;
 
 public enum Match3CellType
 {
+    Empty = 0,
     A,
     B,
     C,
@@ -49,6 +50,9 @@ public class Match3Cell : MonoBehaviour, IDragHandler, IPointerDownHandler, IPoi
         this.type = type;
         switch (type)
         {
+            case Match3CellType.Empty:
+                SetColor(new Color(0, 0, 0, 0.5f));
+                break;
             case Match3CellType.A:
                 SetColor(Color.white);
                 break;
@@ -112,15 +116,17 @@ public class Match3Cell : MonoBehaviour, IDragHandler, IPointerDownHandler, IPoi
     private Vector2 _originPos;
     private int _siblingIndex;
     private float _threshold = 1f;
-    private float _maxDelta = 20f;
+    private float _maxDelta = 50f;
     private Vector2 _dragDir;
     private float _dragValidThreshold = 5f;
     private bool _dragValid;
+    
     public void OnPointerDown(PointerEventData eventData)
     {
         _isDrag = true;
         _startPos = eventData.position;
         rectTransform = GetComponent<RectTransform>();
+        
         _originPos = rectTransform.anchoredPosition;
         _siblingIndex = transform.GetSiblingIndex();
         transform.SetAsLastSibling();

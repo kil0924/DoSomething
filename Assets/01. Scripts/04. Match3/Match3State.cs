@@ -1,6 +1,11 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using Core.FSM;
+using JetBrains.Annotations;
+using NUnit.Framework;
 using UnityEngine;
 
 public enum Match3State
@@ -128,19 +133,15 @@ public class Match3State_Play : Match3State_Base
     public override void OnEnter()
     {
         base.OnEnter();
-        _isPause = true;
+        _isPause = false;
         _map.MakeMapTest();
-        // _map.SetOnClick((x, y) =>
-        // {
-        //     if(_isPause == false)
-        //         ClickCell(x, y);
-        // });
+        _map.SetOnClick((x, y) => { });
         _map.SetOnDrop((int x, int y, int dirX, int dirY) =>
         {
-            if(_isPause == false)
-                SwapCell(x,y,dirX,dirY);
+            if (_isPause == false)
+                SwapCell(x, y, dirX, dirY);
         });
-        _map.StartCoroutine(FindMatch3(null));
+        _map.StartCoroutine(SearchMatch3(null));
     }
 
     private bool _isPause = false;
@@ -187,40 +188,6 @@ public class Match3State_Play : Match3State_Base
     private Match3Cell _curCell;
     private Match3Cell _otherCell;
 
-    private void ClickCell(int x, int y)
-    {
-        if (_curCell == null)
-        {
-            _curCell = _map.cells[x, y];
-            _map[x - 1, y]?.ActiveBorder(true);
-            _map[x + 1, y]?.ActiveBorder(true);
-            _map[x, y - 1]?.ActiveBorder(true);
-            _map[x, y + 1]?.ActiveBorder(true);
-        }
-        else
-        {
-            if ((x == _curCell.x - 1 && y == _curCell.y)
-                || (x == _curCell.x + 1 && y == _curCell.y)
-                || (x == _curCell.x && y == _curCell.y - 1)
-                || (x == _curCell.x && y == _curCell.y + 1))
-            {
-                var cell = _map.cells[x, y];
-                var t = _curCell.type;
-                _curCell.SetType(cell.type);
-                cell.SetType(t);
-
-                _map[_curCell.x - 1, _curCell.y]?.ActiveBorder(false);
-                _map[_curCell.x + 1, _curCell.y]?.ActiveBorder(false);
-                _map[_curCell.x, _curCell.y - 1]?.ActiveBorder(false);
-                _map[_curCell.x, _curCell.y + 1]?.ActiveBorder(false);
-
-                _curCell = null;
-
-                _map.StartCoroutine(FindMatch3(null));
-            }
-        }
-    }
-
     private void SwapCell(int x, int y, int dirX, int dirY)
     {
         _curCell = _map[x, y];
@@ -236,7 +203,7 @@ public class Match3State_Play : Match3State_Base
         _curCell.SetType(_otherCell.type);
         _otherCell.SetType(t);
 
-        _map.StartCoroutine(FindMatch3((matchCount)=>
+        _map.StartCoroutine(SearchMatch3((matchCount) =>
         {
             if (matchCount == 0)
             {
@@ -252,148 +219,180 @@ public class Match3State_Play : Match3State_Base
         _otherCell.SetType(t);
     }
 
-    private float _dropTime = 0.3f;
-    private IEnumerator FindMatch3(Action<int> onFinish)
+    private const float _dropTime = 0.3f;
+
+    public IEnumerator SearchMatch3(Action<int> onFinish)
     {
-        int tt = 0;
         _isPause = true;
+        int totalMatchCount = 0;
         while (true)
         {
-            int t = 0;
+            var matchList = new List<Match3Cell>();
+            
+            matchList.AddRange(SearchVerticalMatch3());
+            matchList.AddRange(SearchHorizontalMatch3());
+
+            matchList = matchList.Distinct().ToList();
+
+            int matchCount = matchList.Count;
+            totalMatchCount += matchCount;
+            if (matchCount > 0)
+            {
+                foreach (var cell in matchList)
+                {
+                    cell.ActiveBorder(true);
+                }
+
+                yield return new WaitForSeconds(_dropTime);
+
+                foreach (var cell in matchList)
+                {
+                    cell.ActiveBorder(false);
+                    _map.StartCoroutine(cell.Effect(null));
+                }
+
+                yield return new WaitForSeconds(_dropTime);
+
+                owner.AddScore(matchList.Count * 100);
+
+                foreach (var cell in matchList)
+                {
+                    cell.SetType(Match3CellType.Empty);
+                }
+
+                yield return new WaitForSeconds(_dropTime);
+
+                var emptyList = new List<Match3Cell>();
+                emptyList.AddRange(matchList);
+
+                while (true)
+                {
+                    if (DropCell() == false)
+                        break;
+                    yield return new WaitForSeconds(_dropTime);
+                }
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        _isPause = false;
+        onFinish?.Invoke(totalMatchCount);
+    }
+    
+    private List<Match3Cell> SearchHorizontalMatch3()
+    {
+        var totalMatchList = new List<Match3Cell>();
+        for (int y = 0; y < _map.height; y++)
+        {
+            Match3Cell pivot = null;
+            var matchList = new List<Match3Cell>();
             for (int x = 0; x < _map.width; x++)
             {
-                for (int y = 0; y < _map.height; y++)
+                var curCell = _map.cells[x, y];
+                if (pivot == null)
                 {
-                    var pivotCell = _map[x, y];
-                    var pivotType = pivotCell.type;
-                    var matchCount = 1;
-                    for (int i = 1; i <= 4; i++)
+                    pivot = curCell;
+                    matchList.Add(pivot);
+                }
+                else
+                {
+                    if (pivot.type == curCell.type)
                     {
-                        if (x + i >= _map.width)
-                        {
-                            break;
-                        }
-
-                        var cell = _map[x + i, y];
-                        if (cell.type != pivotType)
-                        {
-                            break;
-                        }
-                        else
-                        {
-                            matchCount++;
-                        }
+                        matchList.Add(curCell);
                     }
-
-                    if (matchCount >= 3)
+                    else
                     {
-                        t++;
-                        var finishCount = 0;
-                        for (int i = 0; i < matchCount; i++)
+                        if (matchList.Count >= 3)
                         {
-                            var cell = _map.cells[x + i, y];
-                            _map.StartCoroutine(cell.Effect(() => finishCount++));
-                        }
-                        
-                        yield return new WaitUntil(() => finishCount == matchCount);
-                        owner.AddScore(matchCount * 100);
-                        
-                        for (int i = 0; i < matchCount; i++)
-                        {
-                            var cell = _map.cells[x + i, y];
-                            cell.SetColor(new Color(0,0,0,0.5f));
-                        }
-                        yield return new WaitForSeconds(_dropTime);
-
-                        for (int j = 0; j < _map.height - y; j++)
-                        {
-                            for (int i = 0; i < matchCount; i++)
-                            {
-                                var cell = _map.cells[x + i, y + j];
-                                if (y + j + 1 < _map.height)
-                                {
-                                    cell.SetType(_map.cells[x + i, y + j + 1].type);
-                                }
-                                else
-                                {
-                                    cell.SetRandomType();
-                                }
-                            }
-                        }
-                        yield return new WaitForSeconds(_dropTime);
-                    }
-
-                    // Vertical matching
-                    matchCount = 1; // Reset match count for vertical check
-                    for (int i = 1; i <= 4; i++)
-                    {
-                        if (y + i >= _map.height)
-                        {
-                            break;
+                            totalMatchList.AddRange(matchList);
                         }
 
-                        var cell = _map.cells[x, y + i];
-                        if (cell.type != pivotType)
-                        {
-                            break;
-                        }
-                        else
-                        {
-                            matchCount++;
-                        }
-                    }
-
-                    if (matchCount >= 3)
-                    {
-                        t++;
-                        var finishCount = 0;
-                        for (int i = 0; i < matchCount; i++)
-                        {
-                            var cell = _map.cells[x, y + i];
-                            _map.StartCoroutine(cell.Effect(() => finishCount++));
-                        }
-
-                        yield return new WaitUntil(() => finishCount == matchCount);
-                        owner.AddScore(matchCount * 100);
-                        
-                        for (int i = 0; i < matchCount; i++)
-                        {
-                            var cell = _map.cells[x, y + i];
-                            cell.SetColor(new Color(0,0,0,0.5f));
-                        }
-                        yield return new WaitForSeconds(_dropTime);
-
-                        for (int k = 0; k < matchCount; k++)
-                        {
-                            for (int i = 0; i < _map.height - y; i++)
-                            {
-                                var cell = _map.cells[x, y + i];
-                                if (i < matchCount - k - 1)
-                                {
-                                    cell.SetColor(new Color(0,0,0,0.5f));
-                                }
-                                else if (y + i + 1 < _map.height)
-                                {
-                                    cell.SetType(_map.cells[x, y + i + 1].type);
-                                }
-                                else
-                                {
-                                    cell.SetRandomType();
-                                }
-                            }
-                            yield return new WaitForSeconds(_dropTime);
-                        }
+                        pivot = curCell;
+                        matchList.Clear();
+                        matchList.Add(pivot);
                     }
                 }
             }
 
-            if (t == 0)
-                break;
-            else
-                tt += t;
+            if (matchList.Count >= 3)
+            {
+                totalMatchList.AddRange(matchList);
+            }
         }
-        _isPause = false;
-        onFinish?.Invoke(tt);
+
+        return totalMatchList;
+    }
+    private List<Match3Cell> SearchVerticalMatch3()
+    {
+        var totalMatchList = new List<Match3Cell>();
+        for (int x = 0; x < _map.width; x++)
+        {
+            Match3Cell pivot = null;
+            var matchList = new List<Match3Cell>();
+            for (int y = 0; y < _map.height; y++)
+            {
+                var curCell = _map.cells[x, y];
+                if (pivot == null)
+                {
+                    pivot = curCell;
+                    matchList.Add(pivot);
+                }
+                else
+                {
+                    if (pivot.type == curCell.type)
+                    {
+                        matchList.Add(curCell);
+                    }
+                    else
+                    {
+                        if (matchList.Count >= 3)
+                        {
+                            totalMatchList.AddRange(matchList);
+                        }
+                            
+                        pivot = curCell;
+                        matchList.Clear();
+                        matchList.Add(pivot);
+                    }
+                }
+            }
+
+            if (matchList.Count >= 3)
+            {
+                totalMatchList.AddRange(matchList);
+            }
+        }
+        return totalMatchList;
+    }
+    
+    private bool DropCell()
+    {
+        int emptyCellCount = 0;
+        for (int x = 0; x < _map.width; x++)
+        {
+            for (int y = 0; y < _map.height; y++)
+            {
+                var cell = _map[x, y];
+                if (cell.type == Match3CellType.Empty)
+                {
+                    emptyCellCount++;
+                    var upCell = _map[x, y + 1];
+                    if (upCell != null)
+                    {
+                        cell.SetType(upCell.type);
+                        upCell.SetType(Match3CellType.Empty);
+                    }
+                    else
+                    {
+                        cell.SetRandomType();
+                    }
+                }
+            }
+        }
+        return emptyCellCount > 0;
     }
 }
 
