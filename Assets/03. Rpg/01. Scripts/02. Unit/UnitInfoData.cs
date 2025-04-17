@@ -1,9 +1,13 @@
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "UnitInfoData", menuName = "Unit/UnitInfoData")]
-public class UnitInfoData : ScriptableObject
+namespace RPG
 {
-    public int uid;
-    public string name;
-    public int statUid;
+    [CreateAssetMenu(fileName = "UnitInfoData", menuName = "Unit/UnitInfoData")]
+    public class UnitInfoData : ScriptableObject
+    {
+        public int uid;
+        public string name;
+        public int statUid;
+        public string prefab;
+    }
 }

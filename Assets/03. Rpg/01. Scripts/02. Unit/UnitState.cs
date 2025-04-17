@@ -41,49 +41,47 @@ public class UnitStateManager : FSM<UnitState>
 
 #region ========== State ==========
 
-public class UnitState_Init : FSMState<UnitState>
+public class UnitState_Base : FSMState<UnitState>
 {
     public UnitStateManager owner { get; set; }
+    public UnitState_Base(UnitStateManager owner, UnitState state) : base(owner, state)
+    {
+        this.owner = owner;
+    }
+}
+public class UnitState_Init : UnitState_Base
+{
     public UnitState_Init(UnitStateManager owner) : base(owner, UnitState.Init)
     {
-        this.owner = owner;
     }
 }
-public class UnitState_Idle : FSMState<UnitState>
+public class UnitState_Idle : UnitState_Base
 {
-    public UnitStateManager owner { get; set; }
     public UnitState_Idle(UnitStateManager owner) : base(owner, UnitState.Idle)
     {
-        this.owner = owner;
     }
 }
-public class UnitState_Move : FSMState<UnitState>
+public class UnitState_Move : UnitState_Base
 {
-    public UnitStateManager owner { get; set; }
 
     public UnitState_Move(UnitStateManager owner) : base(owner, UnitState.Move)
     {
-        this.owner = owner;
     }
 }   
 
-public class UnitState_Attack : FSMState<UnitState>
+public class UnitState_Attack : UnitState_Base
 {
-    public UnitStateManager owner { get; set; }
 
     public UnitState_Attack(UnitStateManager owner) : base(owner, UnitState.Attack)
     {
-        this.owner = owner;
     }
 }
 
-public class UnitState_Death : FSMState<UnitState>
+public class UnitState_Death : UnitState_Base
 {
-    public UnitStateManager owner { get; set; }
 
     public UnitState_Death(UnitStateManager owner) : base(owner, UnitState.Death)
     {
-        this.owner = owner;
     }
 }
 #endregion
