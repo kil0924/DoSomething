@@ -1,6 +1,8 @@
 using System;
 using UnityEngine;
 using Core.FSM;
+using RPG;
+
 public enum UnitState
 {
     None,
@@ -8,6 +10,7 @@ public enum UnitState
     Idle,
     Move,
     Attack,
+    MoveBack,
     Death,
 }
 
@@ -16,6 +19,12 @@ public enum UnitState
 [Serializable]
 public class UnitStateManager : FSM<UnitState>
 {
+    public Unit unit { get; private set; }
+    public UnitStateManager(Unit unit)
+    {
+        this.unit = unit;
+    }
+    
     #region ========== 초기화 ==========
 
     protected override void BuildStateDict()
@@ -25,6 +34,7 @@ public class UnitStateManager : FSM<UnitState>
         stateDict[UnitState.Idle] = new UnitState_Idle(this);
         stateDict[UnitState.Move] = new UnitState_Move(this);
         stateDict[UnitState.Attack] = new UnitState_Attack(this);
+        stateDict[UnitState.MoveBack] = new UnitState_MoveBack(this);
         stateDict[UnitState.Death] = new UnitState_Death(this);
     }
 
@@ -35,6 +45,12 @@ public class UnitStateManager : FSM<UnitState>
     }
 
     #endregion
+    
+    public void PlayAnimation(string aniName, bool isLoop = true)
+    {
+        unit.PlayAnimation(aniName, isLoop);
+    }
+    
 }
 
 #endregion
@@ -54,26 +70,103 @@ public class UnitState_Init : UnitState_Base
     public UnitState_Init(UnitStateManager owner) : base(owner, UnitState.Init)
     {
     }
+
+    public override void OnEnter()
+    {
+        base.OnEnter();
+        SetNextState(UnitState.Idle);
+    }
+    
 }
 public class UnitState_Idle : UnitState_Base
 {
     public UnitState_Idle(UnitStateManager owner) : base(owner, UnitState.Idle)
     {
     }
+    public override void OnEnter()
+    {
+        base.OnEnter();
+        owner.PlayAnimation("Idle");
+    }
 }
 public class UnitState_Move : UnitState_Base
 {
-
     public UnitState_Move(UnitStateManager owner) : base(owner, UnitState.Move)
     {
+    }
+    public override void OnEnter()
+    {
+        base.OnEnter();
+        owner.PlayAnimation("Move");
+    }
+
+    public override void OnFixedUpdate(float deltaTime)
+    {
+        base.OnFixedUpdate(deltaTime);
+
+        var target = owner.unit.target;
+        
+        if (target == null)
+        {
+            SetNextState(UnitState.Idle);
+            return;
+        }
+        
+        var dir = target.transform.localPosition - owner.unit.transform.localPosition;
+        owner.unit.transform.localPosition += deltaTime * 5 * dir.normalized;
+
+        if (Vector3.SqrMagnitude(dir) < 1f)
+        {
+            SetNextState(UnitState.Attack);
+        }
     }
 }   
 
 public class UnitState_Attack : UnitState_Base
 {
-
     public UnitState_Attack(UnitStateManager owner) : base(owner, UnitState.Attack)
     {
+    }
+    public override void OnEnter()
+    {
+        base.OnEnter();
+        owner.PlayAnimation("Attack1_1", false);
+    }
+
+    public override void OnFixedUpdate(float deltaTime)
+    {
+        base.OnFixedUpdate(deltaTime);
+        if (owner.unit.IsCompleteAnimation())
+        {
+            SetNextState(UnitState.MoveBack);
+        }
+    }
+}
+
+
+public class UnitState_MoveBack : UnitState_Base
+{
+    public UnitState_MoveBack(UnitStateManager owner) : base(owner, UnitState.Attack)
+    {
+    }
+    public override void OnEnter()
+    {
+        base.OnEnter();
+        owner.PlayAnimation("Move");
+    }
+
+    public override void OnFixedUpdate(float deltaTime)
+    {
+        base.OnFixedUpdate(deltaTime);
+        
+        var dir = owner.unit.originPos - owner.unit.transform.localPosition;
+        owner.unit.transform.localPosition += deltaTime * 5 * dir.normalized;
+
+        if (Vector3.SqrMagnitude(dir) < 0.01f)
+        {
+            owner.unit.transform.localPosition = owner.unit.originPos;
+            SetNextState(UnitState.Idle);
+        }
     }
 }
 
@@ -82,6 +175,11 @@ public class UnitState_Death : UnitState_Base
 
     public UnitState_Death(UnitStateManager owner) : base(owner, UnitState.Death)
     {
+    }
+    public override void OnEnter()
+    {
+        base.OnEnter();
+        owner.PlayAnimation("Die");
     }
 }
 #endregion

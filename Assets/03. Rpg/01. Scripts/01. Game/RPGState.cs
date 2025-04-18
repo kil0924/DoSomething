@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Generic;
+using Core;
 using UnityEngine;
 using Core.FSM;
 using Object = UnityEngine.Object;
+using Random = UnityEngine.Random;
 
 namespace RPG
 {
@@ -98,7 +101,6 @@ namespace RPG
             {
                 SetNextState(RPGState.Battle);
             }
-            
         }
         public override void OnExit()
         {
@@ -109,9 +111,9 @@ namespace RPG
 
     public class RPGState_Battle : RPGState_Base
     {
-
-        private Unit _unit;
-
+        private List<Unit> _leftSide = new List<Unit>();
+        private List<Unit> _rightSide = new List<Unit>();
+        
         public RPGState_Battle(RPGStateManager owner) : base(owner, RPGState.Battle)
         {
         }
@@ -120,19 +122,62 @@ namespace RPG
         {
             base.OnEnter();
 
-            _unit = RPGResourceManager.instance.GetUnit(1);
-            
+            for(int i=1; i<=10; i++ )
+            {
+                var unit = RPGResourceManager.instance.GetUnit(i);
+                
+                var isLeft = i % 2 != 0;
+                if (isLeft == false)
+                {
+                    int t = _rightSide.Count;
+                    var isFront = t % 2 != 0;
+                    _rightSide.Add(unit);
+                    unit.transform.position = new Vector3(isFront ? 5 : 2, 0, (t - 2) * 2);
+                    unit.SetSide(false);
+                }
+                else
+                {
+                    int t = _leftSide.Count;
+                    var isFront = t % 2 != 0;
+                    _leftSide.Add(unit);
+                    unit.transform.position = new Vector3(isFront ? -5 : -2, 0, (t - 2) * 2);
+                    unit.SetSide(true);
+                }
+                
+                unit.PlayAnimation("Idle");
+                unit.transform.SetParent(RPGManager.instance.transform);
+            }
 
             Debug.Log("[RPGManager] OnEnter Battle");
         }
 
-
+        private float _time = 0;
+        private Unit _movingUnit;
         public override void OnFixedUpdate(float deltaTime)
         {
             base.OnFixedUpdate(deltaTime);
-            if (StateTime > 3)
+
+            if (_movingUnit == null)
             {
-                SetNextState(RPGState.Lobby);
+                _time += deltaTime;
+                if (_time > 1)
+                {
+                    _time = 0;
+                    
+                    bool isLeft = Random.Range(0, 2) == 0;
+                    var unit = isLeft ? _leftSide.GetRandom() : _rightSide.GetRandom();
+                    var target = isLeft ? _rightSide.GetRandom() : _leftSide.GetRandom();
+                    unit.DoAttack(target);
+                    
+                    _movingUnit = unit;
+                }
+            }
+            else
+            {
+                if (_movingUnit.curState == UnitState.Idle)
+                {
+                    _movingUnit = null;
+                }
             }
         }
 
@@ -140,7 +185,6 @@ namespace RPG
         public override void OnExit()
         {
             base.OnExit();
-            Object.Destroy(_unit.gameObject);
             Debug.Log("[RPGManager] OnExit Battle");
         }
     }

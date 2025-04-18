@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Spine.Unity;
 using UnityEngine;
 
 namespace RPG
@@ -24,8 +25,13 @@ namespace RPG
                 {
                     return null;
                 }
-                
-                resource = new UnitResource(infoData, statData);
+                var spineData = GetSkeletonDataAsset(infoData.prefab);
+                if (spineData == null)
+                {
+                    return null;
+                }
+                    
+                resource = new UnitResource(infoData, statData, spineData);
                 _unitResources.Add(uid, resource);
             }
             else
@@ -33,10 +39,10 @@ namespace RPG
                 resource = _unitResources[uid];
             }
             
-            var prefab = GetPrefab($"RPG/{resource.infoData.prefab}");
+            var prefab = GetPrefab($"RPG/Unit");
             if (prefab == null)
             {
-                Debug.LogError($"Prefab not found. uid:{uid} prefab:{resource.infoData.prefab}");
+                Debug.LogError($"Prefab not found. prefab:RPG/Unit");
                 return null;
             }
             
@@ -47,10 +53,10 @@ namespace RPG
             var unit = go.GetComponent<Unit>();
             if (unit == null)
             {
-                unit = prefab.AddComponent<Unit>();
+                unit = go.AddComponent<Unit>();
             }
             
-            unit.Init(resource.infoData, resource.statData);
+            unit.Init(resource);
             unit.transform.SetParent(transform);
             
             return unit;
@@ -63,6 +69,10 @@ namespace RPG
             {
                 Debug.LogError($"UnitInfoData not found. uid:{uid}");
             }
+            else
+            {
+                Debug.Log($"UnitInfoData found. uid:{uid}");
+            }
             return data;
         }
         public UnitStatData GetUnitStatData(int uid)
@@ -72,6 +82,22 @@ namespace RPG
             {
                 Debug.LogError($"UnitStatData not found. uid:{uid}");
             }
+            else
+            {
+                Debug.Log($"UnitStatData found. uid:{uid}");
+            }
+            return data;
+        }
+        
+        public SkeletonDataAsset GetSkeletonDataAsset(string path)
+        {
+            var data = Resources.Load<SkeletonDataAsset>($"RPG/{path}");
+            if (data == null)
+            {
+                Debug.LogError($"SkeletonDataAsset not found. path:{path}");
+                return null;
+            }
+
             return data;
         }
     }
