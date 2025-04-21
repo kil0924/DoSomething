@@ -1,11 +1,11 @@
 using System.Collections.Generic;
 using Core.Singleton;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class TetrisManager : Singleton<TetrisManager>
 {
-    [SerializeField]
-    private TetrisStateManager _stateManager;
+    private Tetris_FSM _fsm;
     [SerializeField]
     private TetrisUI _tetrisUI;
     [SerializeField]
@@ -18,79 +18,79 @@ public class TetrisManager : Singleton<TetrisManager>
         
         _tetrisUI.Init();
         
-        _stateManager = new TetrisStateManager();
-        _stateManager.Init();
+        _fsm = new Tetris_FSM();
+        _fsm.Init();
         
-        _stateManager.SetOnChangeState(() =>
+        _fsm.SetOnChangeState(() =>
         {
-            _tetrisUI.SetTetrisState(_stateManager.curState.State);
+            _tetrisUI.SetTetrisState(_fsm.curState.State);
         });
 
         #region ========== Init State ==========
 
         _tetrisUI.SetOnClickPlay(() =>
         {
-            _stateManager.PlayTetris();
+            _fsm.PlayTetris();
         });
 
         #endregion
 
         #region ========== Play State ==========
 
-        _stateManager[TetrisState.Play].SetOnEnter(() =>
+        _fsm[TetrisState.Play].SetOnEnter(() =>
         {
             _tetrisUI.OnEnterPlay();
         });
-        _stateManager[TetrisState.Play].SetOnFixedUpdate((deltaTime, stateTime) =>
+        _fsm[TetrisState.Play].SetOnFixedUpdate((deltaTime, stateTime) =>
         {
             _tetrisUI.UpdateTime(stateTime);   
         });
-        _stateManager.SetOnScoreChanged((score) =>
+        _fsm.SetOnScoreChanged((score) =>
         {
             _tetrisUI.UpdateScore(score);
         });
         
         _tetrisUI.SetOnClickPause(() =>
         {
-            _stateManager.PauseTetris();
+            _fsm.PauseTetris();
             _tetrisUI.OnPause();
         });
         _tetrisUI.SetOnClickResume(() =>
         {
-            _stateManager.ResumeTetris();
+            _fsm.ResumeTetris();
             _tetrisUI.OnResume();
         });
         
         _tetrisUI.SetOnClickExit(() =>
         {
-            _stateManager.ExitTetris();
+            _fsm.ExitTetris();
         });
 
         #endregion
 
         #region ========== Result State ==========
 
-        _stateManager[TetrisState.Result].SetOnEnter(() =>
+        _fsm[TetrisState.Result].SetOnEnter(() =>
         {
-            _tetrisUI.OnEnterResult(_stateManager.gameInfo);
+            _tetrisUI.OnEnterResult(_fsm.gameInfo);
         });
         _tetrisUI.SetOnClickFinish(() =>
         {
-            _stateManager.InitTetris();
+            _fsm.InitTetris();
         });
 
         #endregion
         
-        _stateManager.InitTetris();
+        _fsm.InitTetris();
     }
     
     private void Update()
     {
-        _stateManager.OnUpdate(Time.deltaTime);
+        _fsm.OnUpdate(Time.deltaTime);
     }
     private void FixedUpdate()
     {
-        _stateManager.OnFixedUpdate(Time.fixedDeltaTime);
+        _fsm.OnFixedUpdate(Time.fixedDeltaTime);
     }
     
     public void UpdateScore(int score)

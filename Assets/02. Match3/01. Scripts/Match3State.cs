@@ -31,7 +31,7 @@ public class Match3GameInfo
 #region ========== FSM ==========
 
 [Serializable]
-public class Match3StateManager : FSM<Match3State>
+public class Match3_FSM : FSM<Match3State>
 {
     public Match3GameInfo gameInfo;
 
@@ -107,24 +107,24 @@ public class Match3StateManager : FSM<Match3State>
 
 public class Match3State_Base : FSMState<Match3State>
 {
-    public Match3StateManager owner;
+    protected Match3_FSM _fsm;
 
-    public Match3State_Base(Match3StateManager owner, Match3State state) : base(owner, state)
+    public Match3State_Base(Match3_FSM fsm, Match3State state) : base(fsm, state)
     {
-        this.owner = owner;
+        _fsm = fsm;
     }
 }
 
 public class Match3State_Init : Match3State_Base
 {
-    public Match3State_Init(Match3StateManager owner) : base(owner, Match3State.Init)
+    public Match3State_Init(Match3_FSM fsm) : base(fsm, Match3State.Init)
     {
     }
 }
 
 public class Match3State_Play : Match3State_Base
 {
-    public Match3State_Play(Match3StateManager owner) : base(owner, Match3State.Play)
+    public Match3State_Play(Match3_FSM fsm) : base(fsm, Match3State.Play)
     {
     }
 
@@ -183,7 +183,7 @@ public class Match3State_Play : Match3State_Base
 
     private void UpdatePlay(float deltaTime)
     {
-        if (StateTime >= owner.gameInfo.timeLimit)
+        if (StateTime >= _fsm.gameInfo.timeLimit)
         {
             SetNextState(Match3State.Result);
         }
@@ -257,7 +257,7 @@ public class Match3State_Play : Match3State_Base
 
                 yield return new WaitForSeconds(_dropTime);
 
-                owner.AddScore(matchList.Count * 100);
+                _fsm.AddScore(matchList.Count * 100);
 
                 foreach (var cell in matchList)
                 {
@@ -402,7 +402,7 @@ public class Match3State_Play : Match3State_Base
 
 public class Match3State_Result : Match3State_Base
 {
-    public Match3State_Result(Match3StateManager owner) : base(owner, Match3State.Result)
+    public Match3State_Result(Match3_FSM fsm) : base(fsm, Match3State.Result)
     {
     }
 }

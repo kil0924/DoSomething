@@ -29,7 +29,7 @@ public class TetrisGameInfo
 }
 #region ========== FSM ==========
 [Serializable]
-public class TetrisStateManager : FSM<TetrisState>
+public class Tetris_FSM : FSM<TetrisState>
 {
 	public TetrisGameInfo gameInfo;
 	protected override void BuildStateDict()
@@ -98,16 +98,16 @@ public class TetrisStateManager : FSM<TetrisState>
 
 public class TetrisState_Base : FSMState<TetrisState>
 {
-	protected TetrisStateManager owner;
-	public TetrisState_Base(TetrisStateManager owner, TetrisState state) : base(owner, state)
+	protected Tetris_FSM _fsm;
+	public TetrisState_Base(Tetris_FSM fsm, TetrisState state) : base(fsm, state)
 	{
-		this.owner = owner;
+		_fsm = fsm;
 	}
 }
 
 public class TetrisState_Init : TetrisState_Base
 {
-	public TetrisState_Init(TetrisStateManager owner) : base(owner, TetrisState.Init)
+	public TetrisState_Init(Tetris_FSM fsm) : base(fsm, TetrisState.Init)
 	{
 	}
 }
@@ -115,7 +115,7 @@ public class TetrisState_Init : TetrisState_Base
 public class TetrisState_Play : TetrisState_Base
 {
 	private TetrisMap _map => TetrisManager.instance.tetrisMap;
-	public TetrisState_Play(TetrisStateManager owner) : base(owner, TetrisState.Play)
+	public TetrisState_Play(Tetris_FSM fsm) : base(fsm, TetrisState.Play)
 	{
 	}
 
@@ -361,7 +361,7 @@ public class TetrisState_Play : TetrisState_Base
 					}
 				}
 			}
-			owner.AddScore(1);
+			_fsm.AddScore(1);
 		}
 		onFinish?.Invoke();
 	}
@@ -370,7 +370,7 @@ public class TetrisState_Play : TetrisState_Base
 
 public class TetrisState_Result : TetrisState_Base
 {
-	public TetrisState_Result(TetrisStateManager owner) : base(owner, TetrisState.Result)
+	public TetrisState_Result(Tetris_FSM fsm) : base(fsm, TetrisState.Result)
 	{
 	}
 

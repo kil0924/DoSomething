@@ -1,10 +1,10 @@
 using Core.Singleton;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class Match3Manager : Singleton<Match3Manager>
 {
-    [SerializeField]
-    private Match3StateManager _stateManager;
+    private Match3_FSM _fsm;
     [SerializeField]
     private Match3UI _ui;
     [SerializeField]
@@ -17,79 +17,79 @@ public class Match3Manager : Singleton<Match3Manager>
         
         _ui.Init();
         
-        _stateManager = new Match3StateManager();
-        _stateManager.Init();
+        _fsm = new Match3_FSM();
+        _fsm.Init();
         
-        _stateManager.SetOnChangeState(() =>
+        _fsm.SetOnChangeState(() =>
         {
-            _ui.SetState(_stateManager.curState.State);
+            _ui.SetState(_fsm.curState.State);
         });
         
         #region ========== Init State ==========
 
         _ui.SetOnClickPlay(() =>
         {
-            _stateManager.PlayMatch3();
+            _fsm.PlayMatch3();
         });
 
         #endregion
 
         #region ========== Play State ==========
 
-        _stateManager[Match3State.Play].SetOnEnter(() =>
+        _fsm[Match3State.Play].SetOnEnter(() =>
         {
             _ui.OnEnterPlay();
         });
-        _stateManager[Match3State.Play].SetOnFixedUpdate((deltaTime, stateTime) =>
+        _fsm[Match3State.Play].SetOnFixedUpdate((deltaTime, stateTime) =>
         {
-            var time = _stateManager.gameInfo.timeLimit - stateTime;
+            var time = _fsm.gameInfo.timeLimit - stateTime;
             _ui.UpdateTime(time);   
         });
-        _stateManager.SetOnScoreChanged((score) =>
+        _fsm.SetOnScoreChanged((score) =>
         {
             _ui.UpdateScore(score);
         });
         
         _ui.SetOnClickPause(() =>
         {
-            _stateManager.PauseMatch3();
+            _fsm.PauseMatch3();
             _ui.OnPause();
         });
         _ui.SetOnClickResume(() =>
         {
-            _stateManager.ResumeMatch3();
+            _fsm.ResumeMatch3();
             _ui.OnResume();
         });
         
         _ui.SetOnClickExit(() =>
         {
-            _stateManager.ExitMatch3();
+            _fsm.ExitMatch3();
         });
 
         #endregion
 
         #region ========== Result State ==========
 
-        _stateManager[Match3State.Result].SetOnEnter(() =>
+        _fsm[Match3State.Result].SetOnEnter(() =>
         {
-            _ui.OnEnterResult(_stateManager.gameInfo);
+            _ui.OnEnterResult(_fsm.gameInfo);
         });
         _ui.SetOnClickFinish(() =>
         {
-            _stateManager.InitMatch3();
+            _fsm.InitMatch3();
         });
 
         #endregion
         
-        _stateManager.InitMatch3();
+        _fsm.InitMatch3();
     }
     
     private void Update()
     {
-        _stateManager.OnUpdate(Time.deltaTime);
+        _fsm.OnUpdate(Time.deltaTime);
     }
     private void FixedUpdate()
     {
-        _stateManager.OnFixedUpdate(Time.fixedDeltaTime);
+        _fsm.OnFixedUpdate(Time.fixedDeltaTime);
     }
 }

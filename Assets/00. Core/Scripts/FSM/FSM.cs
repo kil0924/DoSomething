@@ -84,10 +84,10 @@ namespace Core.FSM
     [Serializable]
     public class FSMState<T> where T : Enum
     {
-        private FSM<T> owner { get; set; }
-        public FSMState(FSM<T> owner, T state)
+        private FSM<T> _fsm { get; set; }
+        public FSMState(FSM<T> fsm, T state)
         {
-            this.owner = owner;
+            _fsm = fsm;
             _state = state;
         }
 
