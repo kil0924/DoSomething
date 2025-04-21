@@ -2,9 +2,9 @@ using System.Collections.Generic;
 using Spine.Unity;
 using UnityEngine;
 
-namespace RPG
+namespace Rpg
 {
-    public class RPGResourceManager : ResourceManagerBase<RPGResourceManager>
+    public class RpgResourceManager : ResourceManagerBase<RpgResourceManager>
     {
         private Dictionary<int, UnitResource> _unitResources = new Dictionary<int, UnitResource>();
         
@@ -39,10 +39,10 @@ namespace RPG
                 resource = _unitResources[uid];
             }
             
-            var prefab = GetPrefab($"RPG/Unit");
+            var prefab = GetPrefab($"Rpg/Unit");
             if (prefab == null)
             {
-                Debug.LogError($"Prefab not found. prefab:RPG/Unit");
+                Debug.LogError($"Prefab not found. prefab:Rpg/Unit");
                 return null;
             }
             
@@ -64,7 +64,7 @@ namespace RPG
 
         public UnitInfoData GetUnitInfoData(int uid)
         {
-            var data = Resources.Load<UnitInfoData>($"RPG/UnitData/Info_{uid}");
+            var data = Resources.Load<UnitInfoData>($"Rpg/UnitData/Info_{uid}");
             if (data == null)
             {
                 Debug.LogError($"UnitInfoData not found. uid:{uid}");
@@ -77,7 +77,7 @@ namespace RPG
         }
         public UnitStatData GetUnitStatData(int uid)
         {
-            var data = Resources.Load<UnitStatData>($"RPG/UnitData/Stat_{uid}");
+            var data = Resources.Load<UnitStatData>($"Rpg/UnitData/Stat_{uid}");
             if (data == null)
             {
                 Debug.LogError($"UnitStatData not found. uid:{uid}");
@@ -91,7 +91,7 @@ namespace RPG
         
         public SkeletonDataAsset GetSkeletonDataAsset(string path)
         {
-            var data = Resources.Load<SkeletonDataAsset>($"RPG/{path}");
+            var data = Resources.Load<SkeletonDataAsset>($"Rpg/{path}");
             if (data == null)
             {
                 Debug.LogError($"SkeletonDataAsset not found. path:{path}");
@@ -99,6 +99,18 @@ namespace RPG
             }
 
             return data;
+        }
+
+        public UnitUI GetUnitUI()
+        {
+            var prefab = GetPrefab("Rpg/UI/UnitUI");
+            if (prefab == null)
+            {
+                Debug.LogError($"Prefab not found. prefab:Rpg/UI/UnitUI");
+                return null;
+            }
+            var go = Instantiate(prefab);
+            return go.GetComponent<UnitUI>();
         }
     }
     

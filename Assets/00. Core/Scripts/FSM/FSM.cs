@@ -64,7 +64,7 @@ namespace Core.FSM
                 curState = next;
                 curState?.OnEnter();
                 
-                _onChangeState?.Invoke();
+                _onChangeState?.Invoke(curState.State);
             
                 return curState;
             }
@@ -74,8 +74,8 @@ namespace Core.FSM
             }
         }
 
-        private Action _onChangeState;
-        public virtual void SetOnChangeState(Action onChangeState)
+        private Action<T> _onChangeState;
+        public virtual void SetOnChangeState(Action<T> onChangeState)
         {
             _onChangeState = onChangeState;
         }

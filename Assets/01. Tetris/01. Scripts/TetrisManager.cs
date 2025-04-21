@@ -21,9 +21,9 @@ public class TetrisManager : Singleton<TetrisManager>
         _fsm = new Tetris_FSM();
         _fsm.Init();
         
-        _fsm.SetOnChangeState(() =>
+        _fsm.SetOnChangeState(state =>
         {
-            _tetrisUI.SetTetrisState(_fsm.curState.State);
+            _tetrisUI.SetTetrisState(state);
         });
 
         #region ========== Init State ==========

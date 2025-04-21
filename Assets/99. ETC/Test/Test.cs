@@ -1,5 +1,6 @@
+using System;
 using System.Collections.Generic;
-using RPG;
+using Rpg;
 using Spine.Unity;
 using UnityEditor;
 using UnityEngine;
@@ -31,11 +32,11 @@ public class Test : MonoBehaviour
     [ContextMenu( "Test1" )]
     public void Test1()
     {
-        var spineData = RPGResourceManager.instance.GetSkeletonDataAsset(path);
-        var prefab = RPGResourceManager.instance.GetPrefab($"RPG/Unit");
+        var spineData = RpgResourceManager.instance.GetSkeletonDataAsset(path);
+        var prefab = RpgResourceManager.instance.GetPrefab($"Rpg/Unit");
         if (prefab == null)
         {
-            Debug.LogError($"Prefab not found. prefab:RPG/Unit");
+            Debug.LogError($"Prefab not found. prefab:Rpg/Unit");
             return ;
         }
             
@@ -57,5 +58,12 @@ public class Test : MonoBehaviour
         Debug.Log("asdf");
         unit.SetSide(isLeft);
         isLeft = !isLeft;
+    }
+
+    public void OnEnable()
+    {
+        var renderer = GetComponent<Renderer>();
+        renderer.sortingLayerName = "Default";
+        renderer.sortingOrder = -1;
     }
 }

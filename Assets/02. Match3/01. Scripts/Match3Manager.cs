@@ -20,9 +20,9 @@ public class Match3Manager : Singleton<Match3Manager>
         _fsm = new Match3_FSM();
         _fsm.Init();
         
-        _fsm.SetOnChangeState(() =>
+        _fsm.SetOnChangeState(state =>
         {
-            _ui.SetState(_fsm.curState.State);
+            _ui.SetState(state);
         });
         
         #region ========== Init State ==========

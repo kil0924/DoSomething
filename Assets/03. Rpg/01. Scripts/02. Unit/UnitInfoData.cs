@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace RPG
+namespace Rpg
 {
     [CreateAssetMenu(fileName = "UnitInfoData", menuName = "Unit/UnitInfoData")]
     public class UnitInfoData : ScriptableObject

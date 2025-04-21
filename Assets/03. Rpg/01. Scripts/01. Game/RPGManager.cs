@@ -6,16 +6,16 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
 
-namespace RPG
+namespace Rpg
 {
-    public class RPGManager : Singleton<RPGManager>
+    public class RpgManager : Singleton<RpgManager>
     {
-        public RPG_FSM fsm;
+        [SerializeField]
+        private Rpg_FSM _fsm;
         [SerializeField]
         private TeamManager _leftTeam;
         [SerializeField]
         private TeamManager _rightTeam;
-
         public TeamManager leftTeam
         {
             get => _leftTeam;
@@ -27,26 +27,30 @@ namespace RPG
             get => _rightTeam;
             private set => _rightTeam = value;
         }
-
+        
+        [SerializeField]
+        private RpgUI _ui;
+        
         protected override void Awake()
         {
             base.Awake();
-            fsm = new RPG_FSM(this);
-            fsm.Init();
+            _fsm = new Rpg_FSM(this);
+            _fsm.Init();
+            
+            _fsm.SetOnChangeState(state =>
+            {
+                // _ui.SetCurStateText(state.ToString());
+            });
         }
-
-        private void Start()
-        {
-        }
-
+        
         private void Update()
         {
-            fsm.OnUpdate(Time.deltaTime);
+            _fsm.OnUpdate(Time.deltaTime);
         }
 
         private void FixedUpdate()
         {
-            fsm.OnFixedUpdate(Time.fixedDeltaTime);
+            _fsm.OnFixedUpdate(Time.fixedDeltaTime);
         }
 
         public void BuildTeam()
@@ -91,7 +95,7 @@ namespace RPG
             
             for (int i = 1; i <= 3; i++)
             {
-                var unit = RPGResourceManager.instance.GetUnit(Random.Range(1,11));
+                var unit = RpgResourceManager.instance.GetUnit(Random.Range(1,11));
                 if (unit == null)
                     continue;
                 units.Add(unit);
@@ -101,12 +105,17 @@ namespace RPG
                 x = isLeft ? -x : x;
                 var z = (i - 2) * 2;
                 
-                unit.transform.SetParent(RPGManager.instance.transform);
+                unit.transform.SetParent(RpgManager.instance.transform);
                 unit.transform.localPosition = new Vector3(x, 0, z);
                 
                 unit.SetTeam(this);
                 unit.SetSide(isLeft);
                 unit.PrepareBattle();
+
+                var ui = RpgResourceManager.instance.GetUnitUI();
+                ui.transform.Reset(unit.transform);
+                
+                ui.BindUnit(unit);
             }
         }
 

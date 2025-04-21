@@ -2,7 +2,7 @@ using System;
 using Core;
 using UnityEngine;
 using Core.FSM;
-using RPG;
+using Rpg;
 using Spine;
 using AnimationState = Spine.AnimationState;
 

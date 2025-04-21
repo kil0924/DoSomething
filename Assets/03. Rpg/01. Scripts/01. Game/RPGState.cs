@@ -6,10 +6,9 @@ using Core.FSM;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
-namespace RPG
+namespace Rpg
 {
-
-    public enum RPGState
+    public enum RpgState
     {
         None,
         Init,
@@ -20,10 +19,10 @@ namespace RPG
     #region ========== FSM ==========
 
     [Serializable]
-    public class RPG_FSM : FSM<RPGState>
+    public class Rpg_FSM : FSM<RpgState>
     {
-        public RPGManager manager { get; private set; }
-        public RPG_FSM(RPGManager manager)
+        public RpgManager manager { get; private set; }
+        public Rpg_FSM(RpgManager manager)
         {
             this.manager = manager;
         }
@@ -32,15 +31,15 @@ namespace RPG
         protected override void BuildStateDict()
         {
             base.BuildStateDict();
-            stateDict[RPGState.Init] = new RPGState_Init(this);
-            stateDict[RPGState.Lobby] = new RPGState_Lobby(this);
-            stateDict[RPGState.Battle] = new RPGState_Battle(this);
+            stateDict[RpgState.Init] = new RpgState_Init(this);
+            stateDict[RpgState.Lobby] = new RpgState_Lobby(this);
+            stateDict[RpgState.Battle] = new RpgState_Battle(this);
         }
 
         protected override void OnInit()
         {
             base.OnInit();
-            ChangeState(RPGState.Init);
+            ChangeState(RpgState.Init);
         }
 
         #endregion
@@ -50,20 +49,20 @@ namespace RPG
 
     #region ========== State ==========
 
-    public class RPGState_Base : FSMState<RPGState>
+    public class RpgState_Base : FSMState<RpgState>
     {
-        protected RPG_FSM _fsm { get; set; }
-        protected RPGManager _manager => _fsm.manager;
+        protected Rpg_FSM _fsm { get; set; }
+        protected RpgManager _manager => _fsm.manager;
 
-        public RPGState_Base(RPG_FSM fsm, RPGState state) : base(fsm, state)
+        public RpgState_Base(Rpg_FSM fsm, RpgState state) : base(fsm, state)
         {
             _fsm = fsm;
         }
     }
 
-    public class RPGState_Init : RPGState_Base
+    public class RpgState_Init : RpgState_Base
     {
-        public RPGState_Init(RPG_FSM fsm) : base(fsm, RPGState.Init)
+        public RpgState_Init(Rpg_FSM fsm) : base(fsm, RpgState.Init)
         {
         }
 
@@ -71,7 +70,7 @@ namespace RPG
         {
             base.OnEnter();
             _manager.BuildTeam();
-            Debug.Log("[RPGManager] OnEnter Init");
+            Debug.Log("[RpgManager] OnEnter Init");
         }
 
         public override void OnFixedUpdate(float deltaTime)
@@ -79,19 +78,19 @@ namespace RPG
             base.OnFixedUpdate(deltaTime);
             if (StateTime > 3)
             {
-                SetNextState(RPGState.Lobby);
+                SetNextState(RpgState.Lobby);
             }
         }
         public override void OnExit()
         {
             base.OnExit();
-            Debug.Log("[RPGManager] OnExit Init");
+            Debug.Log("[RpgManager] OnExit Init");
         }
     }
 
-    public class RPGState_Lobby : RPGState_Base
+    public class RpgState_Lobby : RpgState_Base
     {
-        public RPGState_Lobby(RPG_FSM fsm) : base(fsm, RPGState.Lobby)
+        public RpgState_Lobby(Rpg_FSM fsm) : base(fsm, RpgState.Lobby)
         {
         }
 
@@ -99,7 +98,7 @@ namespace RPG
         {
             base.OnEnter();
             _manager.PrepareBattle();
-            Debug.Log("[RPGManager] OnEnter Lobby");
+            Debug.Log("[RpgManager] OnEnter Lobby");
         }
 
         public override void OnFixedUpdate(float deltaTime)
@@ -107,19 +106,19 @@ namespace RPG
             base.OnFixedUpdate(deltaTime);
             if (StateTime > 3)
             {
-                SetNextState(RPGState.Battle);
+                SetNextState(RpgState.Battle);
             }
         }
         public override void OnExit()
         {
             base.OnExit();
-            Debug.Log("[RPGManager] OnExit Lobby");
+            Debug.Log("[RpgManager] OnExit Lobby");
         }
     }
 
-    public class RPGState_Battle : RPGState_Base
+    public class RpgState_Battle : RpgState_Base
     {
-        public RPGState_Battle(RPG_FSM fsm) : base(fsm, RPGState.Battle)
+        public RpgState_Battle(Rpg_FSM fsm) : base(fsm, RpgState.Battle)
         {
         }
 
@@ -128,7 +127,7 @@ namespace RPG
             base.OnEnter();
             _actionIntervalTime = 0;
             _isBusy = false;
-            Debug.Log("[RPGManager] OnEnter Battle");
+            Debug.Log("[RpgManager] OnEnter Battle");
         }
 
         private float _actionIntervalTime = 0;
@@ -143,7 +142,7 @@ namespace RPG
             {
                 if (_manager.CheckGameOver())
                 {
-                    SetNextState(RPGState.Lobby);
+                    SetNextState(RpgState.Lobby);
                     return;
                 }
                 
@@ -171,7 +170,7 @@ namespace RPG
         public override void OnExit()
         {
             base.OnExit();
-            Debug.Log("[RPGManager] OnExit Battle");
+            Debug.Log("[RpgManager] OnExit Battle");
         }
     }
 
