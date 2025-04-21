@@ -36,5 +36,11 @@ namespace Core
                 (list[k], list[n]) = (list[n], list[k]);
             }
         }
+        
+        public static bool Approximately(Vector3 a, Vector3 b, float speed, float deltaTime)
+        {
+            float maxMove = speed * deltaTime;
+            return (a - b).sqrMagnitude < maxMove * maxMove;
+        }
     }
 }
