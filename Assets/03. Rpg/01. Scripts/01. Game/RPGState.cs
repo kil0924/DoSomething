@@ -20,8 +20,13 @@ namespace RPG
     #region ========== FSM ==========
 
     [Serializable]
-    public class RPGStateManager : FSM<RPGState>
+    public class RPG_FSM : FSM<RPGState>
     {
+        public RPGManager manager { get; private set; }
+        public RPG_FSM(RPGManager manager)
+        {
+            this.manager = manager;
+        }
         #region ========== 초기화 ==========
 
         protected override void BuildStateDict()
@@ -47,23 +52,25 @@ namespace RPG
 
     public class RPGState_Base : FSMState<RPGState>
     {
-        public RPGStateManager owner { get; set; }
+        protected RPG_FSM _fsm { get; set; }
+        protected RPGManager _manager => _fsm.manager;
 
-        public RPGState_Base(RPGStateManager owner, RPGState state) : base(owner, state)
+        public RPGState_Base(RPG_FSM fsm, RPGState state) : base(fsm, state)
         {
-            this.owner = owner;
+            _fsm = fsm;
         }
     }
 
     public class RPGState_Init : RPGState_Base
     {
-        public RPGState_Init(RPGStateManager owner) : base(owner, RPGState.Init)
+        public RPGState_Init(RPG_FSM fsm) : base(fsm, RPGState.Init)
         {
         }
 
         public override void OnEnter()
         {
             base.OnEnter();
+            _manager.BuildTeam();
             Debug.Log("[RPGManager] OnEnter Init");
         }
 
@@ -84,13 +91,14 @@ namespace RPG
 
     public class RPGState_Lobby : RPGState_Base
     {
-        public RPGState_Lobby(RPGStateManager owner) : base(owner, RPGState.Lobby)
+        public RPGState_Lobby(RPG_FSM fsm) : base(fsm, RPGState.Lobby)
         {
         }
 
         public override void OnEnter()
         {
             base.OnEnter();
+            _manager.PrepareBattle();
             Debug.Log("[RPGManager] OnEnter Lobby");
         }
 
@@ -111,76 +119,54 @@ namespace RPG
 
     public class RPGState_Battle : RPGState_Base
     {
-        private List<Unit> _leftSide = new List<Unit>();
-        private List<Unit> _rightSide = new List<Unit>();
-        
-        public RPGState_Battle(RPGStateManager owner) : base(owner, RPGState.Battle)
+        public RPGState_Battle(RPG_FSM fsm) : base(fsm, RPGState.Battle)
         {
         }
 
         public override void OnEnter()
         {
             base.OnEnter();
-
-            for(int i=1; i<=10; i++ )
-            {
-                var unit = RPGResourceManager.instance.GetUnit(i);
-                
-                var isLeft = i % 2 != 0;
-                if (isLeft == false)
-                {
-                    int t = _rightSide.Count;
-                    var isFront = t % 2 != 0;
-                    _rightSide.Add(unit);
-                    unit.transform.position = new Vector3(isFront ? 5 : 2, 0, (t - 2) * 2);
-                    unit.SetSide(false);
-                }
-                else
-                {
-                    int t = _leftSide.Count;
-                    var isFront = t % 2 != 0;
-                    _leftSide.Add(unit);
-                    unit.transform.position = new Vector3(isFront ? -5 : -2, 0, (t - 2) * 2);
-                    unit.SetSide(true);
-                }
-                
-                unit.PlayAnimation("Idle");
-                unit.transform.SetParent(RPGManager.instance.transform);
-            }
-
+            _actionIntervalTime = 0;
+            _isBusy = false;
             Debug.Log("[RPGManager] OnEnter Battle");
         }
 
-        private float _time = 0;
-        private Unit _movingUnit;
+        private float _actionIntervalTime = 0;
+        private float _actionInterval = 1f;
+        private bool _isBusy = false;
+        
         public override void OnFixedUpdate(float deltaTime)
         {
             base.OnFixedUpdate(deltaTime);
 
-            if (_movingUnit == null)
+            if (_isBusy == false)
             {
-                _time += deltaTime;
-                if (_time > 1)
+                if (_manager.CheckGameOver())
                 {
-                    _time = 0;
-                    
-                    bool isLeft = Random.Range(0, 2) == 0;
-                    var unit = isLeft ? _leftSide.GetRandom() : _rightSide.GetRandom();
-                    var target = isLeft ? _rightSide.GetRandom() : _leftSide.GetRandom();
-                    unit.DoAttack(target);
-                    
-                    _movingUnit = unit;
+                    SetNextState(RPGState.Lobby);
+                    return;
                 }
-            }
-            else
-            {
-                if (_movingUnit.curState == UnitState.Idle)
+                
+                _actionIntervalTime += deltaTime;
+                if (_actionIntervalTime > _actionInterval)
                 {
-                    _movingUnit = null;
+                    bool isLeft = Random.Range(0, 2) == 0;
+                    
+                    var caster = isLeft
+                        ? _manager.leftTeam.GetAliveRandomUnit()
+                        : _manager.rightTeam.GetAliveRandomUnit();
+
+                    if (caster == null)
+                        return;
+
+                    if (caster.UseSkill(() => { _isBusy = false; }))
+                    {
+                        _actionIntervalTime = 0;
+                        _isBusy = true;    
+                    }
                 }
             }
         }
-
 
         public override void OnExit()
         {

@@ -1,7 +1,10 @@
 using System;
+using Core;
 using UnityEngine;
 using Core.FSM;
 using RPG;
+using Spine;
+using AnimationState = Spine.AnimationState;
 
 public enum UnitState
 {
@@ -45,12 +48,6 @@ public class UnitStateManager : FSM<UnitState>
     }
 
     #endregion
-    
-    public void PlayAnimation(string aniName, bool isLoop = true)
-    {
-        unit.PlayAnimation(aniName, isLoop);
-    }
-    
 }
 
 #endregion
@@ -59,15 +56,15 @@ public class UnitStateManager : FSM<UnitState>
 
 public class UnitState_Base : FSMState<UnitState>
 {
-    public UnitStateManager owner { get; set; }
-    public UnitState_Base(UnitStateManager owner, UnitState state) : base(owner, state)
+    public UnitStateManager Fsm { get; set; }
+    public UnitState_Base(UnitStateManager fsm, UnitState state) : base(fsm, state)
     {
-        this.owner = owner;
+        this.Fsm = fsm;
     }
 }
 public class UnitState_Init : UnitState_Base
 {
-    public UnitState_Init(UnitStateManager owner) : base(owner, UnitState.Init)
+    public UnitState_Init(UnitStateManager fsm) : base(fsm, UnitState.Init)
     {
     }
 
@@ -80,106 +77,101 @@ public class UnitState_Init : UnitState_Base
 }
 public class UnitState_Idle : UnitState_Base
 {
-    public UnitState_Idle(UnitStateManager owner) : base(owner, UnitState.Idle)
+    public UnitState_Idle(UnitStateManager fsm) : base(fsm, UnitState.Idle)
     {
     }
     public override void OnEnter()
     {
         base.OnEnter();
-        owner.PlayAnimation("Idle");
+        Fsm.unit.PlayAnimation("Idle");
     }
 }
 public class UnitState_Move : UnitState_Base
 {
-    public UnitState_Move(UnitStateManager owner) : base(owner, UnitState.Move)
+    private float _speed = 5f;
+    public UnitState_Move(UnitStateManager fsm) : base(fsm, UnitState.Move)
     {
     }
     public override void OnEnter()
     {
         base.OnEnter();
-        owner.PlayAnimation("Move");
+        Fsm.unit.PlayAnimation("Move");
     }
 
     public override void OnFixedUpdate(float deltaTime)
     {
         base.OnFixedUpdate(deltaTime);
 
-        var target = owner.unit.target;
-        
-        if (target == null)
-        {
-            SetNextState(UnitState.Idle);
-            return;
-        }
-        
-        var dir = target.transform.localPosition - owner.unit.transform.localPosition;
-        owner.unit.transform.localPosition += deltaTime * 5 * dir.normalized;
-
-        if (Vector3.SqrMagnitude(dir) < 1f)
+        Fsm.unit.MoveTo(Vector3.zero, _speed, deltaTime, () =>
         {
             SetNextState(UnitState.Attack);
-        }
+        });
     }
 }   
 
 public class UnitState_Attack : UnitState_Base
 {
-    public UnitState_Attack(UnitStateManager owner) : base(owner, UnitState.Attack)
+    private AnimationState.TrackEntryDelegate _onCompleteAnimation;
+    public UnitState_Attack(UnitStateManager fsm) : base(fsm, UnitState.Attack)
     {
     }
     public override void OnEnter()
     {
         base.OnEnter();
-        owner.PlayAnimation("Attack1_1", false);
+        Fsm.unit.PlayAnimation("Attack1_1", false, OnCompleteAttack);
+        
+        var target = Fsm.unit.team.enemyTeam.GetAliveRandomUnit();
+        Fsm.unit.Attack(target, () =>
+        {
+            Fsm.unit.AddAnimation("Victory", false, OnCompleteAttack);
+        });
     }
 
     public override void OnFixedUpdate(float deltaTime)
     {
         base.OnFixedUpdate(deltaTime);
-        if (owner.unit.IsCompleteAnimation())
-        {
-            SetNextState(UnitState.MoveBack);
-        }
+    }
+
+    private void OnCompleteAttack(TrackEntry trackEntry)
+    {
+        SetNextState(UnitState.MoveBack);
     }
 }
 
 
 public class UnitState_MoveBack : UnitState_Base
 {
-    public UnitState_MoveBack(UnitStateManager owner) : base(owner, UnitState.Attack)
+    private float _speed = 5f;
+    public UnitState_MoveBack(UnitStateManager fsm) : base(fsm, UnitState.Attack)
     {
     }
     public override void OnEnter()
     {
         base.OnEnter();
-        owner.PlayAnimation("Move");
+        Fsm.unit.PlayAnimation("Move");
     }
 
     public override void OnFixedUpdate(float deltaTime)
     {
         base.OnFixedUpdate(deltaTime);
-        
-        var dir = owner.unit.originPos - owner.unit.transform.localPosition;
-        owner.unit.transform.localPosition += deltaTime * 5 * dir.normalized;
 
-        if (Vector3.SqrMagnitude(dir) < 0.01f)
+        Fsm.unit.MoveTo(Fsm.unit.originPos, _speed, deltaTime, () =>
         {
-            owner.unit.transform.localPosition = owner.unit.originPos;
+            Fsm.unit.OnFinishSkill();
             SetNextState(UnitState.Idle);
-        }
+        });
     }
 }
 
 public class UnitState_Death : UnitState_Base
 {
-
-    public UnitState_Death(UnitStateManager owner) : base(owner, UnitState.Death)
+    public UnitState_Death(UnitStateManager fsm) : base(fsm, UnitState.Death)
     {
     }
     public override void OnEnter()
     {
         base.OnEnter();
-        owner.PlayAnimation("Die");
+        Fsm.unit.PlayAnimation("Die", false);
     }
 }
 #endregion
