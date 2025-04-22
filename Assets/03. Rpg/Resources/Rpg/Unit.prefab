@@ -122,7 +122,7 @@ MonoBehaviour:
     materialsInsideMask: []
     materialsOutsideMask: []
   disableRenderingOnOverride: 1
-  updateTiming: 2
+  updateTiming: 0
   unscaledTime: 0
   _animationName: Idle
   loop: 1

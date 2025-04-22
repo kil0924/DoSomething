@@ -7,6 +7,7 @@ using Spine.Unity;
 using UnityEngine;
 using UnityEngine.Serialization;
 using AnimationState = Spine.AnimationState;
+using Event = Spine.Event;
 
 namespace Rpg
 {
@@ -20,11 +21,6 @@ namespace Rpg
         {
             _stateManager = new UnitStateManager(this);
             _stateManager.Init();
-        }
-
-        public void FixedUpdate()
-        {
-            _stateManager.OnFixedUpdate(Time.deltaTime);
         }
 
         public void Init(UnitResource resource)
@@ -50,6 +46,18 @@ namespace Rpg
             _stateManager.curState.SetNextState(UnitState.Idle);
             originPos = transform.localPosition;
         }
+        
+        public void OnUpdate(float deltaTime)
+        {
+            _stateManager.OnUpdate(deltaTime);
+            OnUpdateSpine(deltaTime);
+        }
+
+        public void OnFixedUpdate(float deltaTime)
+        {
+            _stateManager.OnFixedUpdate(deltaTime);
+            OnFixedUpdateSpine(deltaTime);
+        }
 
         #region ========== 스파인 ==========
 
@@ -60,8 +68,45 @@ namespace Rpg
             _spine.skeletonDataAsset = asset;
             _spine.initialSkinName = "Normal";
             _spine.Initialize(true);
+            _lastFrameTime = 0;
+            _updateSpineTime = 0;
+            _fixedUpdateSpineTime = 0;
         }
 
+        private double _updateSpineTime = 0;
+        private double _fixedUpdateSpineTime = 0;
+        private double _lastFrameTime = 0;
+        private void OnUpdateSpine(float deltaTime)
+        {
+            _updateSpineTime += deltaTime;
+            var delta = _updateSpineTime - _lastFrameTime;
+            if (delta < 0)
+            {
+                _updateSpineTime = _lastFrameTime;
+            }
+            else
+            {
+                _spine.Update((float)delta);
+            }
+            _lastFrameTime = _updateSpineTime;
+        }
+        private void OnFixedUpdateSpine(float deltaTime)
+        {
+            _fixedUpdateSpineTime += deltaTime;
+            var delta = _fixedUpdateSpineTime - _lastFrameTime;
+            if (delta < 0)
+            {
+                _fixedUpdateSpineTime = _lastFrameTime;
+            }
+            else
+            {
+                _spine.Update((float)delta);
+            }
+            _lastFrameTime = _fixedUpdateSpineTime;
+            
+            ExecuteEvents();
+        }
+        
         private List<TrackEntry> _animationTracks = new List<TrackEntry>();
 
         public void PlayAnimation(string aniName, bool loop = true, AnimationState.TrackEntryDelegate onComplete = null)
@@ -70,6 +115,7 @@ namespace Rpg
 
             var trackEntry = _spine.AnimationState.SetAnimation(0, aniName, loop);
             trackEntry.Complete += onComplete;
+            trackEntry.Event += AddEvent;
 
             _animationTracks.Add(trackEntry);
         }
@@ -80,9 +126,27 @@ namespace Rpg
 
             var trackEntry = _spine.AnimationState.AddAnimation(0, aniName, loop, 0);
             trackEntry.Complete += onComplete;
+            trackEntry.Event += AddEvent;
 
             _animationTracks.Add(trackEntry);
         }
+
+        private Queue<Event> _eventQueue = new Queue<Event>();
+
+        private void AddEvent(TrackEntry track, Event e)
+        {
+            _eventQueue.Enqueue(e);
+            // Debug.Log($"[Enqueue Event] {e.Data.Name} {e.Time} {Time.inFixedTimeStep} {_lastFrameTime}");
+        }
+
+        private void ExecuteEvents()
+        {
+            while (_eventQueue.TryDequeue(out var e))
+            {
+                // Debug.Log($"[Execute Event] {e.Data.Name} {e.Time} {Time.inFixedTimeStep} {_lastFrameTime}");
+            }
+        }
+
 
         #endregion
 
@@ -142,8 +206,9 @@ namespace Rpg
                 OnHpChange?.Invoke(_curHp, maxHp);
             }
         }
+
         public event Action<int, int> OnHpChange;
-        
+
         public void Attack(Unit target, Action onKill = null)
         {
             if (target == null)
@@ -173,7 +238,7 @@ namespace Rpg
 
             return false;
         }
-        
+
         #endregion
     }
 

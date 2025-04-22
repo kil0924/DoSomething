@@ -42,15 +42,21 @@ namespace Rpg
                 // _ui.SetCurStateText(state.ToString());
             });
         }
-        
+
         private void Update()
         {
-            _fsm.OnUpdate(Time.deltaTime);
+            var deltaTime = Time.deltaTime;
+            _fsm.OnUpdate(deltaTime);
+            _leftTeam.OnUpdate(deltaTime);
+            _rightTeam.OnUpdate(deltaTime);
         }
 
         private void FixedUpdate()
         {
-            _fsm.OnFixedUpdate(Time.fixedDeltaTime);
+            var deltaTime = Time.fixedDeltaTime;
+            _fsm.OnFixedUpdate(deltaTime);
+            _leftTeam.OnFixedUpdate(deltaTime);
+            _rightTeam.OnFixedUpdate(deltaTime);
         }
 
         public void BuildTeam()
@@ -149,6 +155,22 @@ namespace Rpg
         {
             aliveUnits.Remove(unit);
             deadUnits.Add(unit);
+        }
+
+        public void OnUpdate(float deltaTime)
+        {
+            foreach (var unit in units)
+            {
+                unit.OnUpdate(deltaTime);
+            }
+        }
+
+        public void OnFixedUpdate(float deltaTime)
+        {
+            foreach (var unit in units)
+            {
+                unit.OnFixedUpdate(deltaTime);
+            }
         }
     }
 }

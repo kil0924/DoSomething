@@ -37,7 +37,7 @@ public class Test : MonoBehaviour
         if (prefab == null)
         {
             Debug.LogError($"Prefab not found. prefab:Rpg/Unit");
-            return ;
+            return;
         }
             
         var go = Instantiate(prefab);
@@ -66,4 +66,5 @@ public class Test : MonoBehaviour
         renderer.sortingLayerName = "Default";
         renderer.sortingOrder = -1;
     }
+
 }
