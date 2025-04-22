@@ -11,19 +11,26 @@ public enum UnitState
     None,
     Init,
     Idle,
-    Move,
-    Attack,
-    MoveBack,
+    Turn,
     Death,
+}
+
+public enum UnitSubState
+{
+    Turn_Start,
+    Turn_Move,
+    Turn_Skill,
+    Turn_MoveBack,
+    Turn_End,
 }
 
 #region ========== FSM ==========
 
 [Serializable]
-public class UnitStateManager : FSM<UnitState>
+public class Unit_FSM : FSM<UnitState>
 {
     public Unit unit { get; private set; }
-    public UnitStateManager(Unit unit)
+    public Unit_FSM(Unit unit)
     {
         this.unit = unit;
     }
@@ -35,9 +42,7 @@ public class UnitStateManager : FSM<UnitState>
         base.BuildStateDict();
         stateDict[UnitState.Init] = new UnitState_Init(this);
         stateDict[UnitState.Idle] = new UnitState_Idle(this);
-        stateDict[UnitState.Move] = new UnitState_Move(this);
-        stateDict[UnitState.Attack] = new UnitState_Attack(this);
-        stateDict[UnitState.MoveBack] = new UnitState_MoveBack(this);
+        stateDict[UnitState.Turn] = new UnitState_Turn(this);
         stateDict[UnitState.Death] = new UnitState_Death(this);
     }
 
@@ -56,15 +61,15 @@ public class UnitStateManager : FSM<UnitState>
 
 public class UnitState_Base : FSMState<UnitState>
 {
-    public UnitStateManager Fsm { get; set; }
-    public UnitState_Base(UnitStateManager fsm, UnitState state) : base(fsm, state)
+    public Unit_FSM Fsm { get; set; }
+    public UnitState_Base(Unit_FSM fsm, UnitState state) : base(fsm, state)
     {
         this.Fsm = fsm;
     }
 }
 public class UnitState_Init : UnitState_Base
 {
-    public UnitState_Init(UnitStateManager fsm) : base(fsm, UnitState.Init)
+    public UnitState_Init(Unit_FSM fsm) : base(fsm, UnitState.Init)
     {
     }
 
@@ -77,7 +82,7 @@ public class UnitState_Init : UnitState_Base
 }
 public class UnitState_Idle : UnitState_Base
 {
-    public UnitState_Idle(UnitStateManager fsm) : base(fsm, UnitState.Idle)
+    public UnitState_Idle(Unit_FSM fsm) : base(fsm, UnitState.Idle)
     {
     }
     public override void OnEnter()
@@ -86,86 +91,193 @@ public class UnitState_Idle : UnitState_Base
         Fsm.unit.PlayAnimation("Idle");
     }
 }
-public class UnitState_Move : UnitState_Base
+
+public class UnitState_Turn : UnitState_Base
+{
+    private TurnSub_FSM _subFsm;
+    public UnitState_Turn(Unit_FSM fsm) : base(fsm, UnitState.Turn)
+    {
+        _subFsm = new TurnSub_FSM(fsm);
+        _subFsm.Init();
+    }
+
+    public override void OnEnter()
+    {
+        base.OnEnter();
+        _subFsm.curState.SetNextState(UnitSubState.Turn_Move);
+    }
+
+    public override void OnUpdate(float deltaTime)
+    {
+        base.OnUpdate(deltaTime);
+        _subFsm.OnUpdate(deltaTime);
+    }
+
+    public override void OnFixedUpdate(float deltaTime)
+    {
+        base.OnFixedUpdate(deltaTime);
+        _subFsm.OnFixedUpdate(deltaTime);
+    }
+}
+
+#region ========== Turn Sub State ==========
+
+public class TurnSub_FSM : FSM<UnitSubState>
+{
+    public Unit Unit { get; private set; }
+    public Unit_FSM Parent { get; private set; }
+    public TurnSub_FSM(Unit_FSM fsm)
+    {
+        Unit = fsm.unit;
+        Parent = fsm;
+    }
+    
+    #region ========== 초기화 ==========
+
+    protected override void BuildStateDict()
+    {
+        base.BuildStateDict();
+        stateDict[UnitSubState.Turn_Start] = new TurnSubState_Start(this, Parent);
+        stateDict[UnitSubState.Turn_Move] = new TurnSubState_Move(this, Parent);
+        stateDict[UnitSubState.Turn_Skill] = new TurnSubState_Skill(this, Parent);
+        stateDict[UnitSubState.Turn_MoveBack] = new TurnSubState_MoveBack(this, Parent);
+        stateDict[UnitSubState.Turn_End] = new TurnSubState_End(this, Parent);
+    }
+
+    protected override void OnInit()
+    {
+        base.OnInit();
+        ChangeState(UnitSubState.Turn_Start);
+    }
+
+    #endregion
+}
+public class TurnSubState_Base : FSMState<UnitSubState>
+{
+    protected TurnSub_FSM Fsm { get; set; }
+    protected Unit_FSM Parent { get; set; }
+    public TurnSubState_Base(TurnSub_FSM fsm, Unit_FSM parent, UnitSubState state) : base(fsm, state)
+    {
+        Fsm = fsm;
+        Parent = parent;
+    }
+}
+public class TurnSubState_Start : TurnSubState_Base
+{
+    public TurnSubState_Start(TurnSub_FSM fsm, Unit_FSM parent) : base(fsm, parent, UnitSubState.Turn_Start)
+    {
+    }
+}
+public class TurnSubState_Move : TurnSubState_Base
 {
     private float _speed = 5f;
-    public UnitState_Move(UnitStateManager fsm) : base(fsm, UnitState.Move)
+    public TurnSubState_Move(TurnSub_FSM fsm, Unit_FSM parent) : base(fsm, parent, UnitSubState.Turn_Move)
     {
     }
     public override void OnEnter()
     {
         base.OnEnter();
-        Fsm.unit.PlayAnimation("Move");
+        Fsm.Unit.PlayAnimation("Move");
+    }
+
+    public override void OnUpdate(float deltaTime)
+    {
+        base.OnUpdate(deltaTime);
+        Fsm.Unit.MoveTo(Vector3.zero, _speed, deltaTime, () =>
+        {
+        });
     }
 
     public override void OnFixedUpdate(float deltaTime)
     {
         base.OnFixedUpdate(deltaTime);
 
-        Fsm.unit.MoveTo(Vector3.zero, _speed, deltaTime, () =>
+        Fsm.Unit.MoveTo(Vector3.zero, _speed, deltaTime, () =>
         {
-            SetNextState(UnitState.Attack);
+            SetNextState(UnitSubState.Turn_Skill);
         });
+    }
+
+    public override void OnExit()
+    {
+        base.OnExit();
     }
 }   
 
-public class UnitState_Attack : UnitState_Base
+public class TurnSubState_Skill : TurnSubState_Base
 {
     private AnimationState.TrackEntryDelegate _onCompleteAnimation;
-    public UnitState_Attack(UnitStateManager fsm) : base(fsm, UnitState.Attack)
+    public TurnSubState_Skill(TurnSub_FSM fsm, Unit_FSM parent) : base(fsm, parent,UnitSubState.Turn_Skill)
     {
     }
     public override void OnEnter()
     {
         base.OnEnter();
-        Fsm.unit.PlayAnimation("Attack1_1", false, OnCompleteAttack);
+        Fsm.Unit.PlayAnimation("Attack1_1", false, OnCompleteAttack);
         
-        var target = Fsm.unit.team.enemyTeam.GetAliveRandomUnit();
-        Fsm.unit.Attack(target, () =>
+        var target = Fsm.Unit.team.enemyTeam.GetAliveRandomUnit();
+        Fsm.Unit.Attack(target, () =>
         {
-            Fsm.unit.AddAnimation("Victory", false, OnCompleteAttack);
+            Fsm.Unit.AddAnimation("Victory", false, OnCompleteAttack);
         });
-    }
-
-    public override void OnFixedUpdate(float deltaTime)
-    {
-        base.OnFixedUpdate(deltaTime);
     }
 
     private void OnCompleteAttack(TrackEntry trackEntry)
     {
-        SetNextState(UnitState.MoveBack);
+        SetNextState(UnitSubState.Turn_MoveBack);
     }
 }
 
 
-public class UnitState_MoveBack : UnitState_Base
+public class TurnSubState_MoveBack : TurnSubState_Base
 {
     private float _speed = 5f;
-    public UnitState_MoveBack(UnitStateManager fsm) : base(fsm, UnitState.Attack)
+    public TurnSubState_MoveBack(TurnSub_FSM fsm, Unit_FSM parent) : base(fsm, parent, UnitSubState.Turn_MoveBack)
     {
     }
     public override void OnEnter()
     {
         base.OnEnter();
-        Fsm.unit.PlayAnimation("Move");
+        Fsm.Unit.PlayAnimation("Move");
+    }
+
+    public override void OnUpdate(float deltaTime)
+    {
+        base.OnUpdate(deltaTime);
+        Fsm.Unit.MoveTo(Fsm.Unit.originPos, _speed, deltaTime, () =>
+        {
+        });
     }
 
     public override void OnFixedUpdate(float deltaTime)
     {
         base.OnFixedUpdate(deltaTime);
 
-        Fsm.unit.MoveTo(Fsm.unit.originPos, _speed, deltaTime, () =>
+        Fsm.Unit.MoveTo(Fsm.Unit.originPos, _speed, deltaTime, () =>
         {
-            Fsm.unit.OnFinishSkill();
-            SetNextState(UnitState.Idle);
+            SetNextState(UnitSubState.Turn_End);
         });
     }
 }
 
+public class TurnSubState_End : TurnSubState_Base
+{
+    public TurnSubState_End(TurnSub_FSM fsm, Unit_FSM parent) : base(fsm, parent, UnitSubState.Turn_End)
+    {}
+
+    public override void OnEnter()
+    {
+        base.OnEnter();
+        Fsm.Unit.OnFinishTurn();
+        Parent.curState.SetNextState(UnitState.Idle);
+    }
+}
+#endregion
+
+
 public class UnitState_Death : UnitState_Base
 {
-    public UnitState_Death(UnitStateManager fsm) : base(fsm, UnitState.Death)
+    public UnitState_Death(Unit_FSM fsm) : base(fsm, UnitState.Death)
     {
     }
     public override void OnEnter()

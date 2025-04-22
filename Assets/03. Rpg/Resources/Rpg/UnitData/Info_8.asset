@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1237e3689d856d6488b1baa210caf324, type: 3}
   m_Name: Info_8
   m_EditorClassIdentifier: 
-  uid: 1
+  uid: 8
   name: RudeSkin1
-  statUid: 1
+  statUid: 8
   prefab: Private/Hero/RudeSkin1/RudeSkin1_SkeletonData

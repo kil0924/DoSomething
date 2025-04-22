@@ -41,22 +41,27 @@ namespace Rpg
             {
                 // _ui.SetCurStateText(state.ToString());
             });
+            _lastFrameTime = 0;
+            _updateTime = 0;
+            _fixedUpdateTime = 0;
         }
 
         private void Update()
         {
-            var deltaTime = Time.deltaTime;
-            _fsm.OnUpdate(deltaTime);
-            _leftTeam.OnUpdate(deltaTime);
-            _rightTeam.OnUpdate(deltaTime);
+            CalcLastFrameDelta(Time.deltaTime, false);
+            
+            _fsm.OnUpdate((float)_lastFrameDeltaTime);
+            _leftTeam.OnUpdate((float)_lastFrameDeltaTime);
+            _rightTeam.OnUpdate((float)_lastFrameDeltaTime);
         }
 
         private void FixedUpdate()
         {
-            var deltaTime = Time.fixedDeltaTime;
-            _fsm.OnFixedUpdate(deltaTime);
-            _leftTeam.OnFixedUpdate(deltaTime);
-            _rightTeam.OnFixedUpdate(deltaTime);
+            CalcLastFrameDelta(Time.fixedDeltaTime, true);
+            
+            _fsm.OnFixedUpdate((float)_lastFrameDeltaTime);
+            _leftTeam.OnFixedUpdate((float)_lastFrameDeltaTime);
+            _rightTeam.OnFixedUpdate((float)_lastFrameDeltaTime);
         }
 
         public void BuildTeam()
@@ -77,6 +82,38 @@ namespace Rpg
         public bool CheckGameOver()
         {
             return leftTeam.aliveUnits.Count == 0 || rightTeam.aliveUnits.Count == 0;
+        }
+        
+        
+        private double _updateTime = 0;
+        private double _fixedUpdateTime = 0;
+        private double _lastFrameTime = 0;
+        private double _lastFrameDeltaTime = 0;
+
+        private void CalcLastFrameDelta(float deltaTime, bool isFixedUpdate)
+        {
+            if (isFixedUpdate)
+            {
+                _fixedUpdateTime += deltaTime;
+                _lastFrameDeltaTime = _fixedUpdateTime - _lastFrameTime;
+                if (_lastFrameDeltaTime < 0)
+                {
+                    _fixedUpdateTime = _lastFrameTime;
+                    _lastFrameDeltaTime = 0;
+                }
+                _lastFrameTime = _fixedUpdateTime;
+            }
+            else
+            {
+                _updateTime += deltaTime;
+                _lastFrameDeltaTime = _updateTime - _lastFrameTime;
+                if (_lastFrameDeltaTime < 0)
+                {
+                    _updateTime = _lastFrameTime;
+                    _lastFrameDeltaTime = 0;
+                }
+                _lastFrameTime = _updateTime;
+            }
         }
     }
 
@@ -99,7 +136,7 @@ namespace Rpg
             aliveUnits = new List<Unit>();
             deadUnits = new List<Unit>();
             
-            for (int i = 1; i <= 3; i++)
+            for (int i = 1; i <= 1; i++)
             {
                 var unit = RpgResourceManager.instance.GetUnit(Random.Range(1,11));
                 if (unit == null)

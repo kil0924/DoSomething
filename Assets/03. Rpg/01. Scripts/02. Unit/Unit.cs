@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Core;
 using Spine;
 using Spine.Unity;
@@ -13,21 +14,19 @@ namespace Rpg
 {
     public class Unit : MonoBehaviour
     {
-        [SerializeField] private UnitStateManager _stateManager;
+        [SerializeField] private Unit_FSM fsm;
         [SerializeField] private UnitInfo _info;
         public TeamManager team { get; private set; }
 
-        private void Awake()
-        {
-            _stateManager = new UnitStateManager(this);
-            _stateManager.Init();
-        }
-
         public void Init(UnitResource resource)
         {
+            fsm = new Unit_FSM(this);
+            fsm.Init();
+            
             _info = new UnitInfo(resource.infoData, resource.statData);
             SetSpine(resource.spineData);
-            SetSide(false);
+            
+            skillEffectManager = new UnitSkillEffectManager();
         }
 
         public void SetSide(bool isLeft)
@@ -42,21 +41,24 @@ namespace Rpg
 
         public void PrepareBattle()
         {
-            _curHp = (int)_info.stat.GetStat(UnitStatType.MaxHp);
-            _stateManager.curState.SetNextState(UnitState.Idle);
+            _curHp = _info.stat.GetStat(UnitStatType.MaxHp);
+            skillEffectManager.Clear();
+            fsm.curState.SetNextState(UnitState.Idle);
             originPos = transform.localPosition;
         }
-        
+
         public void OnUpdate(float deltaTime)
         {
-            _stateManager.OnUpdate(deltaTime);
-            OnUpdateSpine(deltaTime);
+            fsm.OnUpdate(deltaTime);
+            _spine.Update(deltaTime);
         }
 
         public void OnFixedUpdate(float deltaTime)
         {
-            _stateManager.OnFixedUpdate(deltaTime);
-            OnFixedUpdateSpine(deltaTime);
+            fsm.OnFixedUpdate(deltaTime);
+            _spine.Update(deltaTime);
+            
+            ExecuteEvents();
         }
 
         #region ========== 스파인 ==========
@@ -68,45 +70,8 @@ namespace Rpg
             _spine.skeletonDataAsset = asset;
             _spine.initialSkinName = "Normal";
             _spine.Initialize(true);
-            _lastFrameTime = 0;
-            _updateSpineTime = 0;
-            _fixedUpdateSpineTime = 0;
         }
 
-        private double _updateSpineTime = 0;
-        private double _fixedUpdateSpineTime = 0;
-        private double _lastFrameTime = 0;
-        private void OnUpdateSpine(float deltaTime)
-        {
-            _updateSpineTime += deltaTime;
-            var delta = _updateSpineTime - _lastFrameTime;
-            if (delta < 0)
-            {
-                _updateSpineTime = _lastFrameTime;
-            }
-            else
-            {
-                _spine.Update((float)delta);
-            }
-            _lastFrameTime = _updateSpineTime;
-        }
-        private void OnFixedUpdateSpine(float deltaTime)
-        {
-            _fixedUpdateSpineTime += deltaTime;
-            var delta = _fixedUpdateSpineTime - _lastFrameTime;
-            if (delta < 0)
-            {
-                _fixedUpdateSpineTime = _lastFrameTime;
-            }
-            else
-            {
-                _spine.Update((float)delta);
-            }
-            _lastFrameTime = _fixedUpdateSpineTime;
-            
-            ExecuteEvents();
-        }
-        
         private List<TrackEntry> _animationTracks = new List<TrackEntry>();
 
         public void PlayAnimation(string aniName, bool loop = true, AnimationState.TrackEntryDelegate onComplete = null)
@@ -147,7 +112,6 @@ namespace Rpg
             }
         }
 
-
         #endregion
 
         #region ========== 이동 ==========
@@ -171,25 +135,27 @@ namespace Rpg
 
         #endregion
 
-        #region ========== 스킬 ==========
+        #region ========== 턴 진행 ==========
 
-        private Action _onFinishSkill;
+        private Action _onFinishTurn;
 
-        public void OnFinishSkill()
+        public void OnFinishTurn()
         {
-            _onFinishSkill?.Invoke();
-            _onFinishSkill = null;
+            skillEffectManager.ProcessTurn();
+            
+            _onFinishTurn?.Invoke();
+            _onFinishTurn = null;
         }
 
-        public bool UseSkill(Action onFinish)
+        public bool ExecuteTurn(Action onFinish)
         {
-            if (_stateManager.curState.State != UnitState.Idle)
+            if (fsm.curState.State != UnitState.Idle)
             {
                 return false;
             }
 
-            _onFinishSkill = onFinish;
-            _stateManager.curState.SetNextState(UnitState.Move);
+            _onFinishTurn = onFinish;
+            fsm.curState.SetNextState(UnitState.Turn);
 
             return true;
         }
@@ -201,12 +167,23 @@ namespace Rpg
             get => _curHp;
             set
             {
-                var maxHp = (int)_info.stat.GetStat(UnitStatType.MaxHp);
+                var maxHp = GetStat(UnitStatType.MaxHp);
                 _curHp = Mathf.Clamp(value, 0, maxHp);
                 OnHpChange?.Invoke(_curHp, maxHp);
             }
         }
 
+        public int GetStat(UnitStatType type)
+        {
+            var value = _info.stat.GetStat(type) + skillEffectManager.GetStatEffectValue(type);
+            var percentType = StatLinker.GetPercentStat(type);
+            var percentValue = 0;
+            if (percentType != UnitStatType.None)
+            {
+                percentValue = _info.stat.GetStat(percentType) + skillEffectManager.GetStatEffectValue(percentType);
+            }
+            return (int)(value * (1 + percentValue * 0.01f));
+        }
         public event Action<int, int> OnHpChange;
 
         public void Attack(Unit target, Action onKill = null)
@@ -214,13 +191,19 @@ namespace Rpg
             if (target == null)
                 return;
 
-            var damage =
-                (int)(_info.stat.GetStat(UnitStatType.Attack) - target._info.stat.GetStat(UnitStatType.Defense));
+            var attack = GetStat(UnitStatType.Attack);
+            var defense = target.GetStat(UnitStatType.Defense);
+            var damage = attack - defense;
             damage = Mathf.Max(damage, 0);
 
             if (target.TakeDamage(damage))
             {
                 onKill?.Invoke();
+            }
+            else
+            {
+                var skillEffect = new SkillEffect(SkillEffectType.Defense, -1, 5);
+                target.skillEffectManager.AddSkillEffect(skillEffect);;
             }
 
             Debug.Log($"{_info.name} attack {target.name} remain hp : {target._curHp}");
@@ -231,7 +214,7 @@ namespace Rpg
             curHp -= damage;
             if (curHp <= 0)
             {
-                _stateManager.curState.SetNextState(UnitState.Death);
+                fsm.curState.SetNextState(UnitState.Death);
                 team.OnUnitDead(this);
                 return true;
             }
@@ -239,7 +222,11 @@ namespace Rpg
             return false;
         }
 
+        [SerializeField]
+        private UnitSkillEffectManager skillEffectManager;
+
         #endregion
+
     }
 
     [Serializable]
@@ -268,6 +255,150 @@ namespace Rpg
             this.infoData = infoData;
             this.statData = statData;
             this.spineData = spineData;
+        }
+    }
+
+    public class UnitSkillEffectManager
+    {
+        private Dictionary<UnitStatType, int> _statEffect = new Dictionary<UnitStatType, int>();
+
+        private Dictionary<SkillEffectType, List<SkillEffect>> _skillEffect = new Dictionary<SkillEffectType, List<SkillEffect>>();
+
+        public void AddSkillEffect(SkillEffect effect)
+        {
+            if (_skillEffect.ContainsKey(effect.type) == false)
+            {
+                _skillEffect.Add(effect.type, new List<SkillEffect>());
+            }
+
+            _skillEffect[effect.type].Add(effect);
+            CalcStatEffect(effect.type);
+        }
+
+        public void RemoveSkillEffect(SkillEffect effect)
+        {
+            _skillEffect[effect.type].Remove(effect);
+            CalcStatEffect(effect.type);
+        }
+
+        private void CalcStatEffect(SkillEffectType type)
+        {
+            if (SkillEffectLinker.GetStatType(type) != UnitStatType.None)
+            {
+                var value = 0f;
+                int count = _skillEffect[type].Count;
+                for (int i = 0; i < count; i++)
+                {
+                    value += _skillEffect[type][i].value;
+                }
+                _statEffect[SkillEffectLinker.GetStatType(type)] = (int)value;
+            }
+        }
+
+        public int GetStatEffectValue(UnitStatType statType)
+        {
+            return _statEffect.GetValueOrDefault(statType, 0);
+        }
+
+        public void Clear()
+        {
+            _skillEffect.Clear();
+            _statEffect.Clear();
+        }
+
+        public void ProcessTurn()
+        {
+            foreach (var list in _skillEffect.Values)
+            {
+                list.ForEach(x => x.ExecuteTurn());
+                list.RemoveAll(x => x.isAlive == false);
+            }
+        }
+    }
+
+    public enum SkillEffectType
+    {
+        None,
+        [SkillEffect(UnitStatType.MaxHp)]
+        MaxHp,
+        [SkillEffect(UnitStatType.MaxHpPercent)]
+        MaxHpPercent,
+        [SkillEffect(UnitStatType.Attack)] 
+        Attack,
+        [SkillEffect(UnitStatType.AttackPercent)]
+        AttackPercent,
+        [SkillEffect(UnitStatType.Defense)]
+        Defense,
+        [SkillEffect(UnitStatType.DefensePercent)]
+        DefensePercent,
+        
+        Stun,
+        
+    }
+
+    public class SkillEffect
+    {
+        public SkillEffectType type;
+        public float value;
+        public int turn;
+
+        public bool isAlive = true;
+
+        public SkillEffect(SkillEffectType type, float value, int turn)
+        {
+            this.type = type;
+            this.value = value;
+            this.turn = turn;
+            isAlive = true;
+        }
+
+        public void ExecuteTurn()
+        {
+            if (isAlive == false)
+                return;
+            
+            turn--;
+            if (turn <= 0)
+            {
+                isAlive = false;
+            }
+        }
+    }
+
+    [AttributeUsage(AttributeTargets.Field)]
+    public class SkillEffectAttribute : Attribute
+    {
+        public UnitStatType statType { get; }
+
+        public SkillEffectAttribute(UnitStatType statType = UnitStatType.None)
+        {
+            this.statType = statType;
+        }
+    }
+
+    public static class SkillEffectLinker
+    {
+        private static Dictionary<SkillEffectType, UnitStatType> _statEffectMap;
+
+        static SkillEffectLinker()
+        {
+            _statEffectMap = new();
+            var values = Enum.GetValues(typeof(SkillEffectType));
+
+            foreach (SkillEffectType type in values)
+            {
+                var field = typeof(SkillEffectType).GetField(type.ToString());
+                var attr = field?.GetCustomAttribute<SkillEffectAttribute>();
+                if (attr != null)
+                {
+                    _statEffectMap[type] = attr.statType;
+                }
+            }
+        }
+
+        public static UnitStatType GetStatType(SkillEffectType baseStat)
+        {
+            return _statEffectMap.GetValueOrDefault(baseStat, UnitStatType.None);
         }
     }
 }

@@ -133,7 +133,15 @@ namespace Rpg
         private float _actionIntervalTime = 0;
         private float _actionInterval = 1f;
         private bool _isBusy = false;
-        
+        public override void OnUpdate(float deltaTime)
+        {
+            base.OnUpdate(deltaTime);
+            if (_isBusy == false)
+            {
+                _actionIntervalTime += deltaTime;
+            }
+        }
+
         public override void OnFixedUpdate(float deltaTime)
         {
             base.OnFixedUpdate(deltaTime);
@@ -158,7 +166,7 @@ namespace Rpg
                     if (caster == null)
                         return;
 
-                    if (caster.UseSkill(() => { _isBusy = false; }))
+                    if (caster.ExecuteTurn(() => { _isBusy = false; }))
                     {
                         _actionIntervalTime = 0;
                         _isBusy = true;    

@@ -115,6 +115,7 @@ namespace Core.FSM
     
         public virtual void OnUpdate(float deltaTime)
         {
+            _stateTime += deltaTime;
             _onUpdate?.Invoke(deltaTime, _stateTime);
         }
         
@@ -128,7 +129,7 @@ namespace Core.FSM
     
         public virtual void OnFixedUpdate(float deltaTime)
         {
-            _stateTime += Time.deltaTime;
+            _stateTime += deltaTime;
             _onFixedUpdate?.Invoke(deltaTime, _stateTime);
         }
         public delegate void OnFixedUpdateDelegate(float deltaTime, float stateTime);

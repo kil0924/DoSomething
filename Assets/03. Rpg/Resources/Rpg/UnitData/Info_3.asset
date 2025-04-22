@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1237e3689d856d6488b1baa210caf324, type: 3}
   m_Name: Info_3
   m_EditorClassIdentifier: 
-  uid: 1
+  uid: 3
   name: Blanchet
-  statUid: 1
+  statUid: 3
   prefab: Private/Hero/Blanchet/Blanchet_SkeletonData

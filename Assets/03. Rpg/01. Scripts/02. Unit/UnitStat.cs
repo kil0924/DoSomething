@@ -7,6 +7,8 @@ namespace Rpg
 {
     public enum UnitStatType
     {
+        None,
+        
         [PercentPair(MaxHpPercent)] MaxHp,
         MaxHpPercent,
 
@@ -33,16 +35,9 @@ namespace Rpg
             _stat.Add(UnitStatType.DefensePercent, 0);
         }
 
-        public float GetStat(UnitStatType statType)
+        public int GetStat(UnitStatType statType)
         {
-            var percentStat = StatLinker.GetPercentStat(statType);
-            float percent = 0;
-            if (percentStat != null)
-            {
-                percent = _stat[(UnitStatType)percentStat] * 0.01f;
-            }
-
-            return _stat[statType] * (1 + percent);
+            return _stat[statType];
         }
     }
 
@@ -77,9 +72,9 @@ namespace Rpg
             }
         }
 
-        public static UnitStatType? GetPercentStat(UnitStatType baseStat)
+        public static UnitStatType GetPercentStat(UnitStatType baseStat)
         {
-            return _map.TryGetValue(baseStat, out var pair) ? pair : (UnitStatType?)null;
+            return _map.GetValueOrDefault(baseStat, UnitStatType.None);
         }
     }
 }

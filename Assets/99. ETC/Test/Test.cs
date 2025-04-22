@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using NUnit.Framework;
 using Rpg;
 using Spine.Unity;
 using UnityEditor;
@@ -12,19 +14,23 @@ public class Test : MonoBehaviour
     [ContextMenu( "Test" )]
     public void TestMethod()
     {
-        string[] guids = AssetDatabase.FindAssets("t:SkeletonDataAsset");
-        foreach (string guid in guids)
+        List<int> listA = Enumerable.Range(1, 100000).ToList();
+        List<int> listB = Enumerable.Range(1, 100000).ToList();
+        var time = 0f;
+        time = Time.realtimeSinceStartup;
+        listB.ForEach(x =>
         {
-            string path = AssetDatabase.GUIDToAssetPath(guid);
-            var asset = AssetDatabase.LoadAssetAtPath<SkeletonDataAsset>(path);
-            if (asset != null)
-            {
-                asset.scale = scale;
-                EditorUtility.SetDirty(asset);
-            }
+            if(x % 10000 == 0)
+                Debug.Log(x);
+        });
+        Debug.Log($"Time:{Time.realtimeSinceStartup - time}");
+        time = Time.realtimeSinceStartup;
+        foreach (var i in listA)
+        {
+            if(i % 10000 == 0)
+                Debug.Log(i);
         }
-        AssetDatabase.SaveAssets();
-        Debug.Log($"SkeletonDataAsset scale updated to {scale} on {guids.Length} assets.");
+        Debug.Log($"Time:{Time.realtimeSinceStartup - time}");
     }
 
     public string path;
@@ -59,12 +65,4 @@ public class Test : MonoBehaviour
         unit.SetSide(isLeft);
         isLeft = !isLeft;
     }
-
-    public void OnEnable()
-    {
-        var renderer = GetComponent<Renderer>();
-        renderer.sortingLayerName = "Default";
-        renderer.sortingOrder = -1;
-    }
-
 }
