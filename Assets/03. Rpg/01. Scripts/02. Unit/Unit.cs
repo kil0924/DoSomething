@@ -16,17 +16,22 @@ namespace Rpg
     {
         [SerializeField] private Unit_FSM fsm;
         [SerializeField] private UnitInfo _info;
+        [SerializeField] private UnitStat _stat;
+        [SerializeField] private UnitSkillManager _skillManager;
+        [SerializeField] private UnitSkillEffectManager _skillEffectManager;
         public TeamManager team { get; private set; }
-
+        
         public void Init(UnitResource resource)
         {
             fsm = new Unit_FSM(this);
             fsm.Init();
             
-            _info = new UnitInfo(resource.infoData, resource.statData);
             SetSpine(resource.spineData);
             
-            skillEffectManager = new UnitSkillEffectManager();
+            _info = new UnitInfo(resource.infoData);
+            _stat = new UnitStat(resource.statData);
+            _skillManager = new UnitSkillManager(resource.skillDataDict);
+            _skillEffectManager = new UnitSkillEffectManager();
         }
 
         public void SetSide(bool isLeft)
@@ -41,8 +46,8 @@ namespace Rpg
 
         public void PrepareBattle()
         {
-            _curHp = _info.stat.GetStat(UnitStatType.MaxHp);
-            skillEffectManager.Clear();
+            _curHp = _stat.GetStat(UnitStatType.MaxHp);
+            _skillEffectManager.Clear();
             fsm.curState.SetNextState(UnitState.Idle);
             originPos = transform.localPosition;
         }
@@ -141,7 +146,8 @@ namespace Rpg
 
         public void OnFinishTurn()
         {
-            skillEffectManager.ProcessTurn();
+            _skillManager.ProcessTurn();
+            _skillEffectManager.ProcessTurn();
             
             _onFinishTurn?.Invoke();
             _onFinishTurn = null;
@@ -175,35 +181,40 @@ namespace Rpg
 
         public int GetStat(UnitStatType type)
         {
-            var value = _info.stat.GetStat(type) + skillEffectManager.GetStatEffectValue(type);
+            var value = _stat.GetStat(type) + _skillEffectManager.GetStatEffectValue(type);
             var percentType = StatLinker.GetPercentStat(type);
             var percentValue = 0;
             if (percentType != UnitStatType.None)
             {
-                percentValue = _info.stat.GetStat(percentType) + skillEffectManager.GetStatEffectValue(percentType);
+                percentValue = _stat.GetStat(percentType) + _skillEffectManager.GetStatEffectValue(percentType);
             }
             return (int)(value * (1 + percentValue * 0.01f));
         }
         public event Action<int, int> OnHpChange;
 
-        public void Attack(Unit target, Action onKill = null)
+
+        public UnitSkill SelectSkill()
+        {
+            return _skillManager.SelectSkill();
+        }
+
+        public void AddSkillEffect(UnitSkillEffect effect)
+        {
+            _skillEffectManager.AddSkillEffect(effect);
+        }
+
+        public void Attack(Unit target, float value, Action onKill = null)
         {
             if (target == null)
                 return;
 
             var attack = GetStat(UnitStatType.Attack);
-            var defense = target.GetStat(UnitStatType.Defense);
-            var damage = attack - defense;
-            damage = Mathf.Max(damage, 0);
+
+            var damage = (int)(attack * value);
 
             if (target.TakeDamage(damage))
             {
                 onKill?.Invoke();
-            }
-            else
-            {
-                var skillEffect = new SkillEffect(SkillEffectType.Defense, -1, 5);
-                target.skillEffectManager.AddSkillEffect(skillEffect);;
             }
 
             Debug.Log($"{_info.name} attack {target.name} remain hp : {target._curHp}");
@@ -211,6 +222,9 @@ namespace Rpg
 
         public bool TakeDamage(int damage)
         {
+            var defense = GetStat(UnitStatType.Defense);
+            damage = Mathf.Max(damage - defense, 0);
+            
             curHp -= damage;
             if (curHp <= 0)
             {
@@ -222,9 +236,24 @@ namespace Rpg
             return false;
         }
 
-        [SerializeField]
-        private UnitSkillEffectManager skillEffectManager;
+        public void Heal(Unit target, float value)
+        {
+            if (target == null)
+                return;
 
+            var attack = GetStat(UnitStatType.Attack);
+            var heal = (int)(attack * value);
+            heal = Mathf.Max(heal, 0);
+
+            target.TakeHeal(heal);
+            
+            Debug.Log($"{_info.name} heal {target.name} remain hp : {target._curHp}");
+        }
+
+        public void TakeHeal(int heal)
+        {
+            curHp += heal;
+        }
         #endregion
 
     }
@@ -234,13 +263,11 @@ namespace Rpg
     {
         public int uid;
         public string name;
-        public UnitStat stat;
 
-        public UnitInfo(UnitInfoData infoData, UnitStatData statData)
+        public UnitInfo(UnitInfoData infoData)
         {
             uid = infoData.uid;
             name = infoData.name;
-            stat = new UnitStat(statData);
         }
     }
 
@@ -249,156 +276,28 @@ namespace Rpg
         public UnitInfoData infoData { get; private set; }
         public UnitStatData statData { get; private set; }
         public SkeletonDataAsset spineData { get; private set; }
-
-        public UnitResource(UnitInfoData infoData, UnitStatData statData, SkeletonDataAsset spineData)
-        {
-            this.infoData = infoData;
-            this.statData = statData;
-            this.spineData = spineData;
-        }
-    }
-
-    public class UnitSkillEffectManager
-    {
-        private Dictionary<UnitStatType, int> _statEffect = new Dictionary<UnitStatType, int>();
-
-        private Dictionary<SkillEffectType, List<SkillEffect>> _skillEffect = new Dictionary<SkillEffectType, List<SkillEffect>>();
-
-        public void AddSkillEffect(SkillEffect effect)
-        {
-            if (_skillEffect.ContainsKey(effect.type) == false)
-            {
-                _skillEffect.Add(effect.type, new List<SkillEffect>());
-            }
-
-            _skillEffect[effect.type].Add(effect);
-            CalcStatEffect(effect.type);
-        }
-
-        public void RemoveSkillEffect(SkillEffect effect)
-        {
-            _skillEffect[effect.type].Remove(effect);
-            CalcStatEffect(effect.type);
-        }
-
-        private void CalcStatEffect(SkillEffectType type)
-        {
-            if (SkillEffectLinker.GetStatType(type) != UnitStatType.None)
-            {
-                var value = 0f;
-                int count = _skillEffect[type].Count;
-                for (int i = 0; i < count; i++)
-                {
-                    value += _skillEffect[type][i].value;
-                }
-                _statEffect[SkillEffectLinker.GetStatType(type)] = (int)value;
-            }
-        }
-
-        public int GetStatEffectValue(UnitStatType statType)
-        {
-            return _statEffect.GetValueOrDefault(statType, 0);
-        }
-
-        public void Clear()
-        {
-            _skillEffect.Clear();
-            _statEffect.Clear();
-        }
-
-        public void ProcessTurn()
-        {
-            foreach (var list in _skillEffect.Values)
-            {
-                list.ForEach(x => x.ExecuteTurn());
-                list.RemoveAll(x => x.isAlive == false);
-            }
-        }
-    }
-
-    public enum SkillEffectType
-    {
-        None,
-        [SkillEffect(UnitStatType.MaxHp)]
-        MaxHp,
-        [SkillEffect(UnitStatType.MaxHpPercent)]
-        MaxHpPercent,
-        [SkillEffect(UnitStatType.Attack)] 
-        Attack,
-        [SkillEffect(UnitStatType.AttackPercent)]
-        AttackPercent,
-        [SkillEffect(UnitStatType.Defense)]
-        Defense,
-        [SkillEffect(UnitStatType.DefensePercent)]
-        DefensePercent,
         
-        Stun,
-        
-    }
+        public Dictionary<UnitSkillData, List<UnitSkillEffectData>> skillDataDict { get; private set; }
 
-    public class SkillEffect
-    {
-        public SkillEffectType type;
-        public float value;
-        public int turn;
-
-        public bool isAlive = true;
-
-        public SkillEffect(SkillEffectType type, float value, int turn)
+        public UnitResource SetInfoData(UnitInfoData data)
         {
-            this.type = type;
-            this.value = value;
-            this.turn = turn;
-            isAlive = true;
+            infoData = data;
+            return this;
         }
-
-        public void ExecuteTurn()
+        public UnitResource SetStatData(UnitStatData data)
         {
-            if (isAlive == false)
-                return;
-            
-            turn--;
-            if (turn <= 0)
-            {
-                isAlive = false;
-            }
+            statData = data;
+            return this;
         }
-    }
-
-    [AttributeUsage(AttributeTargets.Field)]
-    public class SkillEffectAttribute : Attribute
-    {
-        public UnitStatType statType { get; }
-
-        public SkillEffectAttribute(UnitStatType statType = UnitStatType.None)
+        public UnitResource SetSpineData(SkeletonDataAsset data)
         {
-            this.statType = statType;
+            spineData = data;
+            return this;
         }
-    }
-
-    public static class SkillEffectLinker
-    {
-        private static Dictionary<SkillEffectType, UnitStatType> _statEffectMap;
-
-        static SkillEffectLinker()
+        public UnitResource SetSkillDataList(Dictionary<UnitSkillData, List<UnitSkillEffectData>> data)
         {
-            _statEffectMap = new();
-            var values = Enum.GetValues(typeof(SkillEffectType));
-
-            foreach (SkillEffectType type in values)
-            {
-                var field = typeof(SkillEffectType).GetField(type.ToString());
-                var attr = field?.GetCustomAttribute<SkillEffectAttribute>();
-                if (attr != null)
-                {
-                    _statEffectMap[type] = attr.statType;
-                }
-            }
-        }
-
-        public static UnitStatType GetStatType(SkillEffectType baseStat)
-        {
-            return _statEffectMap.GetValueOrDefault(baseStat, UnitStatType.None);
+            skillDataDict = data;
+            return this;
         }
     }
 }

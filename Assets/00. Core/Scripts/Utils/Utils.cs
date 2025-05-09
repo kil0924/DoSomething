@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Core.Random;
 using UnityEngine;
 
 namespace Core
@@ -23,6 +24,10 @@ namespace Core
         public static T GetRandom<T>(this List<T> list)
         {
             return list[UnityEngine.Random.Range(0, list.Count)];
+        }
+        public static T GetRandom<T>(this List<T> list, CustomRandom random)
+        {
+            return list[random.Range(0, list.Count)];
         }
         
         public static void Shuffle<T>(this List<T> list)

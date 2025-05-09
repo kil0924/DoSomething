@@ -207,19 +207,34 @@ public class TurnSubState_Move : TurnSubState_Base
 public class TurnSubState_Skill : TurnSubState_Base
 {
     private AnimationState.TrackEntryDelegate _onCompleteAnimation;
+    private UnitSkill _skill;
+    private bool _invoked = false;
     public TurnSubState_Skill(TurnSub_FSM fsm, Unit_FSM parent) : base(fsm, parent,UnitSubState.Turn_Skill)
     {
     }
     public override void OnEnter()
     {
         base.OnEnter();
-        Fsm.Unit.PlayAnimation("Attack1_1", false, OnCompleteAttack);
+        _skill = Fsm.Unit.SelectSkill();
+        _invoked = false;
         
-        var target = Fsm.Unit.team.enemyTeam.GetAliveRandomUnit();
-        Fsm.Unit.Attack(target, () =>
+        Fsm.Unit.PlayAnimation(_skill.aniName, false, OnCompleteAttack);
+        
+        // var target = Fsm.Unit.team.enemyTeam.GetAliveRandomUnit();
+        // Fsm.Unit.Attack(target, () =>
+        // {
+        //     Fsm.Unit.AddAnimation("Victory", false, OnCompleteAttack);
+        // });
+    }
+
+    public override void OnFixedUpdate(float deltaTime)
+    {
+        base.OnFixedUpdate(deltaTime);
+        if (_invoked == false && StateTime > 0.5f)
         {
-            Fsm.Unit.AddAnimation("Victory", false, OnCompleteAttack);
-        });
+            _invoked = true;
+            _skill.Invoke(Fsm.Unit);
+        }
     }
 
     private void OnCompleteAttack(TrackEntry trackEntry)

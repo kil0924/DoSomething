@@ -30,8 +30,14 @@ namespace Rpg
                 {
                     return null;
                 }
+                
+                var skillDataList = GetUnitSkillDataList(infoData.skillUidList);
                     
-                resource = new UnitResource(infoData, statData, spineData);
+                resource = new UnitResource();
+                resource.SetInfoData(infoData)
+                    .SetStatData(statData)
+                    .SetSpineData(spineData)
+                    .SetSkillDataList(skillDataList);
                 _unitResources.Add(uid, resource);
             }
             else
@@ -99,6 +105,39 @@ namespace Rpg
             }
 
             return data;
+        }
+
+        public Dictionary<UnitSkillData, List<UnitSkillEffectData>> GetUnitSkillDataList(List<int> uids)
+        {
+            var dataDict = new Dictionary<UnitSkillData, List<UnitSkillEffectData>>();
+            foreach (var uid in uids)
+            {
+                var data = Resources.Load<UnitSkillData>($"Rpg/UnitData/Skill_{uid}");
+                if (data == null)
+                {
+                    Debug.LogError($"UnitSkillData not found. uid:{uid}");
+                    continue;
+                }
+                var skillEffectDataList = GetUnitSkillEffectDataList(data.skillEffectList);
+                dataDict.Add(data, skillEffectDataList);
+            }
+            return dataDict;
+        }
+
+        public List<UnitSkillEffectData> GetUnitSkillEffectDataList(List<int> uids)
+        {
+            var dataList = new List<UnitSkillEffectData>();
+            foreach (var uid in uids)
+            {
+                var data = Resources.Load<UnitSkillEffectData>($"Rpg/UnitData/SkillEffect_{uid}");
+                if (data == null)
+                {
+                    Debug.LogError($"UnitSkillEffectData not found. uid:{uid}");
+                    continue;
+                }
+                dataList.Add(data);
+            }
+            return dataList;
         }
 
         public UnitUI GetUnitUI()

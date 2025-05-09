@@ -14,5 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   uid: 2
   name: Aya
-  statUid: 2
   prefab: Private/Hero/Aya/Aya_SkeletonData
+  statUid: 2
+  skillUidList: 0100000002000000

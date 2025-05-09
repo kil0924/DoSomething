@@ -14,5 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   uid: 6
   name: Hilde
-  statUid: 6
   prefab: Private/Hero/Hilde/Hilde_SkeletonData
+  statUid: 6
+  skillUidList: 0100000002000000

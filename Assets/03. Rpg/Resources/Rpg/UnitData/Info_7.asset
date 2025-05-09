@@ -14,5 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   uid: 7
   name: Lethe
-  statUid: 7
   prefab: Private/Hero/Lethe/Lethe_SkeletonData
+  statUid: 7
+  skillUidList: 0100000002000000

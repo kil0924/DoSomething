@@ -9,11 +9,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1237e3689d856d6488b1baa210caf324, type: 3}
-  m_Name: Info_5
+  m_Script: {fileID: 11500000, guid: 62bb0d0239a78214d944b7dac1a8dcd0, type: 3}
+  m_Name: SkillEffect_1
   m_EditorClassIdentifier: 
-  uid: 5
-  name: DianaSkin1
-  prefab: Private/Hero/DianaSkin1/DianaSkin1_SkeletonData
-  statUid: 5
-  skillUidList: 0100000002000000
+  uid: 1
+  value: 1
+  type: 1
+  targetGroup: 2
+  targetType: 1
+  turns: 0

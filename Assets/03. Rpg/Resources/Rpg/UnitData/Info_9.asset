@@ -14,5 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   uid: 9
   name: UiSkin1
-  statUid: 9
   prefab: Private/Hero/UiSkin1/UiSkin1_SkeletonData
+  statUid: 9
+  skillUidList: 0100000002000000

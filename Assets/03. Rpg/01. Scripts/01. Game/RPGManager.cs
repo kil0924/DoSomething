@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Core;
+using Core.Random;
 using Core.Singleton;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -30,10 +31,15 @@ namespace Rpg
         
         [SerializeField]
         private RpgUI _ui;
+
+        public CustomRandom random;
         
         protected override void Awake()
         {
             base.Awake();
+            
+            random = new CustomRandom(0);
+            
             _fsm = new Rpg_FSM(this);
             _fsm.Init();
             

@@ -14,5 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   uid: 3
   name: Blanchet
-  statUid: 3
   prefab: Private/Hero/Blanchet/Blanchet_SkeletonData
+  statUid: 3
+  skillUidList: 0100000002000000

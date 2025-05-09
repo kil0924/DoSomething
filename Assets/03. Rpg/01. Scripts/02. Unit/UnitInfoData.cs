@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Rpg
@@ -7,7 +8,9 @@ namespace Rpg
     {
         public int uid;
         public string name;
-        public int statUid;
         public string prefab;
+        
+        public int statUid;
+        public List<int> skillUidList; 
     }
 }

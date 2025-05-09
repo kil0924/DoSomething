@@ -14,5 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   uid: 4
   name: Butter
-  statUid: 4
   prefab: Private/Hero/Butter/Butter_SkeletonData
+  statUid: 4
+  skillUidList: 0100000002000000
