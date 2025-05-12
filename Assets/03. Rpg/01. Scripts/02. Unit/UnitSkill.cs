@@ -18,11 +18,13 @@ namespace Rpg
         None,
         Ally,
         Enemy,
+        All,
     }
 
     public enum SkillTargetType
     {
         None,
+        Self,
         Single,
         All,
     }
@@ -50,48 +52,86 @@ namespace Rpg
         public void Invoke(Unit caster)
         {
             remainTurns = cooldownTurns;
+            ActiveSkillEffects(caster);
+        }
+
+        public void ActiveSkillEffects(Unit caster)
+        {
             foreach (var data in skillEffectDataList)
             {
                 var targets = GetTargetList(caster, data);
                 foreach (var target in targets)
                 {
-                    switch (data.type)
-                    {
-                        case SkillEffectType.Damage:
-                            caster.Attack(target, data.value);
-                            break;
-                        case SkillEffectType.Heal:
-                            caster.Heal(target, data.value);
-                            break;
-                        default:
-                            var effect = new UnitSkillEffect(caster, target, data.type, data.value, data.turns);
-                            target.AddSkillEffect(effect);
-                            break;
-                    }
+                    ActiveSkillEffect(caster, target, data);       
                 }
             }
         }
 
+        public void ActiveSkillEffect(Unit caster, Unit target, UnitSkillEffectData data)
+        {
+            if (data == null)
+                return;
+            
+            switch (data.type)
+            {
+                case SkillEffectType.Damage:
+                    caster.Attack(target, data.value);
+                    break;
+                case SkillEffectType.Heal:
+                    caster.Heal(target, data.value);
+                    break;
+                case SkillEffectType.Count:
+                    int count = target.CountSkillEffect(data.targetUid);
+                    if (count == Mathf.RoundToInt(data.value))
+                    {
+                        ActiveSkillEffectByUid(caster, target, data.trueUid);
+                    }
+                    else
+                    {
+                        ActiveSkillEffectByUid(caster, target, data.falseUid);
+                    }
+                    break;
+                default:
+                    var effect = new UnitSkillEffect(caster, target, data);
+                    target.AddSkillEffect(effect);
+                    break;
+            }
+            Debug.Log($"Active Skill Effect. Caster : {caster.name}, Target : {target.name}, Effect : {data.uid}");
+        }
+        public void ActiveSkillEffectByUid(Unit caster, Unit target, int uid)
+        {
+            var data = RpgResourceManager.instance.GetUnitSkillEffectData(uid);
+            if (data == null)
+                return;
+            ActiveSkillEffect(caster, target, data);
+        }
+
         public List<Unit> GetTargetList(Unit caster, UnitSkillEffectData data)
         {
-            List<Unit> group = null;
+            List<Unit> group = new List<Unit>();
             switch (data.targetGroup)
             {
                 case SkillTargetGroup.Ally:
-                    group = caster.team.aliveUnits;
+                    group.AddRange(caster.team.aliveUnits);
                     break;
                 case SkillTargetGroup.Enemy:
-                    group = caster.team.enemyTeam.aliveUnits;
+                    group.AddRange(caster.team.enemyTeam.aliveUnits);
+                    break;
+                case SkillTargetGroup.All:
+                    group.AddRange(caster.team.aliveUnits);
+                    group.AddRange(caster.team.enemyTeam.aliveUnits);
                     break;
                 default:
                     return null;
             }
 
-            List<Unit> targets = null;
+            List<Unit> targets = new List<Unit>();
             switch (data.targetType)
             {
+                case SkillTargetType.Self:
+                    targets.Add(caster);
+                    break;
                 case SkillTargetType.Single:
-                    targets = new List<Unit>();
                     targets.Add(group.GetRandom(RpgManager.instance.random));
                     break;
                 case SkillTargetType.All:
@@ -125,7 +165,7 @@ namespace Rpg
         
         public UnitSkill SelectSkill()
         {
-            if (skills[UnitSkillType.Skill].remainTurns == 0)
+            if (skills[UnitSkillType.Skill].remainTurns <= 0)
                 return skills[UnitSkillType.Skill];
             else
                 return skills[UnitSkillType.BasicAttack];
@@ -135,6 +175,8 @@ namespace Rpg
         {
             foreach (var skill in skills.Values)
             {
+                if (skill.remainTurns <= 0)
+                    continue;
                 skill.remainTurns--;
             }
         }

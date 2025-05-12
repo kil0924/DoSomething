@@ -10,14 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 62bb0d0239a78214d944b7dac1a8dcd0, type: 3}
-  m_Name: SkillEffect_3
+  m_Name: SkillEffect_5
   m_EditorClassIdentifier: 
-  uid: 3
+  uid: 5
   value: 2
-  type: 7
+  type: 13
   targetGroup: 1
-  targetType: 2
-  turns: 3
-  targetUid: 0
-  trueUid: 0
-  falseUid: 0
+  targetType: 1
+  turns: 0
+  targetUid: 3
+  trueUid: 6
+  falseUid: 4

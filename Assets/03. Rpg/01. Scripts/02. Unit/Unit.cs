@@ -142,13 +142,15 @@ namespace Rpg
 
         #region ========== 턴 진행 ==========
 
+        public void ProcessTurn()
+        {
+            _skillManager.ProcessTurn();
+            _skillEffectManager.ProcessTurn();
+        }
         private Action _onFinishTurn;
 
         public void OnFinishTurn()
         {
-            _skillManager.ProcessTurn();
-            _skillEffectManager.ProcessTurn();
-            
             _onFinishTurn?.Invoke();
             _onFinishTurn = null;
         }
@@ -165,6 +167,8 @@ namespace Rpg
 
             return true;
         }
+        
+        #endregion
 
         private int _curHp;
 
@@ -191,7 +195,6 @@ namespace Rpg
             return (int)(value * (1 + percentValue * 0.01f));
         }
         public event Action<int, int> OnHpChange;
-
 
         public UnitSkill SelectSkill()
         {
@@ -254,7 +257,11 @@ namespace Rpg
         {
             curHp += heal;
         }
-        #endregion
+
+        public int CountSkillEffect(int uid)
+        {
+            return _skillEffectManager.GetCount(uid);
+        }
 
     }
 

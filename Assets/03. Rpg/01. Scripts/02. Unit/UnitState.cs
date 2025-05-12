@@ -17,6 +17,8 @@ public enum UnitState
 
 public enum UnitSubState
 {
+    None,
+    Turn_Waiting,
     Turn_Start,
     Turn_Move,
     Turn_Skill,
@@ -104,7 +106,7 @@ public class UnitState_Turn : UnitState_Base
     public override void OnEnter()
     {
         base.OnEnter();
-        _subFsm.curState.SetNextState(UnitSubState.Turn_Move);
+        _subFsm.curState.SetNextState(UnitSubState.Turn_Start);
     }
 
     public override void OnUpdate(float deltaTime)
@@ -137,6 +139,7 @@ public class TurnSub_FSM : FSM<UnitSubState>
     protected override void BuildStateDict()
     {
         base.BuildStateDict();
+        stateDict[UnitSubState.Turn_Waiting] = new TurnSubState_Waiting(this, Parent);
         stateDict[UnitSubState.Turn_Start] = new TurnSubState_Start(this, Parent);
         stateDict[UnitSubState.Turn_Move] = new TurnSubState_Move(this, Parent);
         stateDict[UnitSubState.Turn_Skill] = new TurnSubState_Skill(this, Parent);
@@ -147,7 +150,7 @@ public class TurnSub_FSM : FSM<UnitSubState>
     protected override void OnInit()
     {
         base.OnInit();
-        ChangeState(UnitSubState.Turn_Start);
+        ChangeState(UnitSubState.Turn_Waiting);
     }
 
     #endregion
@@ -162,10 +165,27 @@ public class TurnSubState_Base : FSMState<UnitSubState>
         Parent = parent;
     }
 }
+public class TurnSubState_Waiting : TurnSubState_Base
+{
+    public TurnSubState_Waiting(TurnSub_FSM fsm, Unit_FSM parent) : base(fsm, parent, UnitSubState.Turn_Waiting)
+    {
+    }
+    public override void OnEnter()
+    {
+        base.OnEnter();
+    }
+}
 public class TurnSubState_Start : TurnSubState_Base
 {
     public TurnSubState_Start(TurnSub_FSM fsm, Unit_FSM parent) : base(fsm, parent, UnitSubState.Turn_Start)
     {
+    }
+
+    public override void OnEnter()
+    {
+        base.OnEnter();
+        Fsm.Unit.ProcessTurn();
+        SetNextState(UnitSubState.Turn_Move);
     }
 }
 public class TurnSubState_Move : TurnSubState_Base
@@ -198,10 +218,6 @@ public class TurnSubState_Move : TurnSubState_Base
         });
     }
 
-    public override void OnExit()
-    {
-        base.OnExit();
-    }
 }   
 
 public class TurnSubState_Skill : TurnSubState_Base
@@ -284,6 +300,8 @@ public class TurnSubState_End : TurnSubState_Base
     {
         base.OnEnter();
         Fsm.Unit.OnFinishTurn();
+        
+        SetNextState(UnitSubState.Turn_Waiting);
         Parent.curState.SetNextState(UnitState.Idle);
     }
 }

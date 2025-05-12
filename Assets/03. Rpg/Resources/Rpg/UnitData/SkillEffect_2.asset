@@ -13,8 +13,11 @@ MonoBehaviour:
   m_Name: SkillEffect_2
   m_EditorClassIdentifier: 
   uid: 2
-  value: 2
+  value: 1.5
   type: 1
   targetGroup: 2
   targetType: 2
   turns: 0
+  targetUid: 0
+  trueUid: 0
+  falseUid: 0

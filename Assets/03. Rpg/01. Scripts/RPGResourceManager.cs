@@ -107,37 +107,71 @@ namespace Rpg
             return data;
         }
 
+        private Dictionary<int, UnitSkillData> _skillDataDict = new Dictionary<int, UnitSkillData>();
         public Dictionary<UnitSkillData, List<UnitSkillEffectData>> GetUnitSkillDataList(List<int> uids)
         {
             var dataDict = new Dictionary<UnitSkillData, List<UnitSkillEffectData>>();
             foreach (var uid in uids)
             {
-                var data = Resources.Load<UnitSkillData>($"Rpg/UnitData/Skill_{uid}");
+                var tuple = GetUnitSkillData(uid);
+                var data = tuple.Item1;
                 if (data == null)
                 {
-                    Debug.LogError($"UnitSkillData not found. uid:{uid}");
                     continue;
                 }
-                var skillEffectDataList = GetUnitSkillEffectDataList(data.skillEffectList);
+
+                var skillEffectDataList = tuple.Item2;
                 dataDict.Add(data, skillEffectDataList);
             }
             return dataDict;
         }
 
+        public (UnitSkillData, List<UnitSkillEffectData>) GetUnitSkillData(int uid)
+        {
+            if (_skillDataDict.TryGetValue(uid, out var value))
+                return (value, GetUnitSkillEffectDataList(value.skillEffectList));
+            
+            var data = Resources.Load<UnitSkillData>($"Rpg/UnitData/Skill_{uid}");
+            if (data == null)
+            {
+                Debug.LogError($"UnitSkillData not found. uid:{uid}");
+                return (null, null);
+            }
+            _skillDataDict.Add(uid, data);
+            return (data, GetUnitSkillEffectDataList(data.skillEffectList));
+        }
+
+        private Dictionary<int, UnitSkillEffectData> _skillEffectDataDict = new Dictionary<int, UnitSkillEffectData>();
         public List<UnitSkillEffectData> GetUnitSkillEffectDataList(List<int> uids)
         {
             var dataList = new List<UnitSkillEffectData>();
             foreach (var uid in uids)
             {
-                var data = Resources.Load<UnitSkillEffectData>($"Rpg/UnitData/SkillEffect_{uid}");
+                var data = GetUnitSkillEffectData(uid);
                 if (data == null)
                 {
-                    Debug.LogError($"UnitSkillEffectData not found. uid:{uid}");
                     continue;
                 }
                 dataList.Add(data);
             }
             return dataList;
+        }
+
+        public UnitSkillEffectData GetUnitSkillEffectData(int uid)
+        {
+            if (_skillEffectDataDict.TryGetValue(uid, out var value))
+            {
+                return value;
+            }
+            
+            var data = Resources.Load<UnitSkillEffectData>($"Rpg/UnitData/SkillEffect_{uid}");
+            if (data == null)
+            {
+                Debug.LogError($"UnitSkillEffectData not found. uid:{uid}");
+                return null;
+            }
+            _skillEffectDataDict.Add(uid, data);
+            return data;
         }
 
         public UnitUI GetUnitUI()

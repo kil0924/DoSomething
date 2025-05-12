@@ -11,5 +11,9 @@ namespace Rpg
         public SkillTargetGroup targetGroup;
         public SkillTargetType targetType;
         public int turns;
+
+        public int targetUid;
+        public int trueUid;
+        public int falseUid;
     }
 }

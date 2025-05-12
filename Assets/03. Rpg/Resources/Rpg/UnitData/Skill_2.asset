@@ -16,4 +16,4 @@ MonoBehaviour:
   aniName: Skill1_1
   cooldownTurns: 3
   type: 2
-  skillEffectList: 02000000
+  skillEffectList: 020000000300000004000000

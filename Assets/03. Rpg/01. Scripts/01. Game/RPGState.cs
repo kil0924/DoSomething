@@ -1,10 +1,6 @@
 using System;
-using System.Collections.Generic;
-using Core;
 using UnityEngine;
 using Core.FSM;
-using Object = UnityEngine.Object;
-using Random = UnityEngine.Random;
 
 namespace Rpg
 {
@@ -157,7 +153,7 @@ namespace Rpg
                 _actionIntervalTime += deltaTime;
                 if (_actionIntervalTime > _actionInterval)
                 {
-                    bool isLeft = Random.Range(0, 2) == 0;
+                    bool isLeft = _manager.random.Range(0, 2) == 0;
                     
                     var caster = isLeft
                         ? _manager.leftTeam.GetAliveRandomUnit()
