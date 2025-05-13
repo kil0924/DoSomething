@@ -16,7 +16,7 @@ MonoBehaviour:
   value: 2
   type: 7
   targetGroup: 1
-  targetType: 2
+  targetType: 3
   turns: 3
   targetUid: 0
   trueUid: 0

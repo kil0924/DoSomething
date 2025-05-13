@@ -90,7 +90,14 @@ public class UnitState_Idle : UnitState_Base
     public override void OnEnter()
     {
         base.OnEnter();
-        Fsm.unit.PlayAnimation("Idle");
+        if (Fsm.unit.IsStun())
+        {
+            Fsm.unit.PlayAnimation("Groggy");
+        }
+        else
+        {
+            Fsm.unit.PlayAnimation("Idle");
+        }
     }
 }
 
@@ -184,8 +191,15 @@ public class TurnSubState_Start : TurnSubState_Base
     public override void OnEnter()
     {
         base.OnEnter();
+        if (Fsm.Unit.IsStun())
+        {
+            SetNextState(UnitSubState.Turn_End);
+        }
+        else
+        {
+            SetNextState(UnitSubState.Turn_Move);    
+        }
         Fsm.Unit.ProcessTurn();
-        SetNextState(UnitSubState.Turn_Move);
     }
 }
 public class TurnSubState_Move : TurnSubState_Base
@@ -217,7 +231,6 @@ public class TurnSubState_Move : TurnSubState_Base
             SetNextState(UnitSubState.Turn_Skill);
         });
     }
-
 }   
 
 public class TurnSubState_Skill : TurnSubState_Base
@@ -235,12 +248,6 @@ public class TurnSubState_Skill : TurnSubState_Base
         _invoked = false;
         
         Fsm.Unit.PlayAnimation(_skill.aniName, false, OnCompleteAttack);
-        
-        // var target = Fsm.Unit.team.enemyTeam.GetAliveRandomUnit();
-        // Fsm.Unit.Attack(target, () =>
-        // {
-        //     Fsm.Unit.AddAnimation("Victory", false, OnCompleteAttack);
-        // });
     }
 
     public override void OnFixedUpdate(float deltaTime)
@@ -258,7 +265,6 @@ public class TurnSubState_Skill : TurnSubState_Base
         SetNextState(UnitSubState.Turn_MoveBack);
     }
 }
-
 
 public class TurnSubState_MoveBack : TurnSubState_Base
 {

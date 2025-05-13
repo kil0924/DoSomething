@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Core;
-using NUnit.Framework;
 using UnityEngine;
 
 namespace Rpg
@@ -52,11 +51,7 @@ namespace Rpg
         public void Invoke(Unit caster)
         {
             remainTurns = cooldownTurns;
-            ActiveSkillEffects(caster);
-        }
-
-        public void ActiveSkillEffects(Unit caster)
-        {
+            
             foreach (var data in skillEffectDataList)
             {
                 var targets = GetTargetList(caster, data);
@@ -65,45 +60,6 @@ namespace Rpg
                     ActiveSkillEffect(caster, target, data);       
                 }
             }
-        }
-
-        public void ActiveSkillEffect(Unit caster, Unit target, UnitSkillEffectData data)
-        {
-            if (data == null)
-                return;
-            
-            switch (data.type)
-            {
-                case SkillEffectType.Damage:
-                    caster.Attack(target, data.value);
-                    break;
-                case SkillEffectType.Heal:
-                    caster.Heal(target, data.value);
-                    break;
-                case SkillEffectType.Count:
-                    int count = target.CountSkillEffect(data.targetUid);
-                    if (count == Mathf.RoundToInt(data.value))
-                    {
-                        ActiveSkillEffectByUid(caster, target, data.trueUid);
-                    }
-                    else
-                    {
-                        ActiveSkillEffectByUid(caster, target, data.falseUid);
-                    }
-                    break;
-                default:
-                    var effect = new UnitSkillEffect(caster, target, data);
-                    target.AddSkillEffect(effect);
-                    break;
-            }
-            Debug.Log($"Active Skill Effect. Caster : {caster.name}, Target : {target.name}, Effect : {data.uid}");
-        }
-        public void ActiveSkillEffectByUid(Unit caster, Unit target, int uid)
-        {
-            var data = RpgResourceManager.instance.GetUnitSkillEffectData(uid);
-            if (data == null)
-                return;
-            ActiveSkillEffect(caster, target, data);
         }
 
         public List<Unit> GetTargetList(Unit caster, UnitSkillEffectData data)
@@ -141,6 +97,60 @@ namespace Rpg
                     return null;
             }
             return targets;
+        }
+
+        public void ActiveSkillEffectByUid(Unit caster, Unit target, int uid)
+        {
+            var data = RpgResourceManager.instance.GetUnitSkillEffectData(uid);
+            if (data == null)
+                return;
+            ActiveSkillEffect(caster, target, data);
+        }
+        
+        public void ActiveSkillEffect(Unit caster, Unit target, UnitSkillEffectData data)
+        {
+            if (data == null)
+                return;
+            
+            switch (data.type)
+            {
+                case SkillEffectType.Damage:
+                    ActiveDamage(caster, target, data);
+                    break;
+                case SkillEffectType.Heal:
+                    ActiveHeal(caster, target, data);
+                    break;
+                case SkillEffectType.Count:
+                    ActiveCount(caster, target, data);       
+                    break;
+                default:
+                    var effect = new UnitSkillEffect(caster, target, data);
+                    target.AddSkillEffect(effect);
+                    break;
+            }
+            Debug.Log($"Active Skill Effect. Caster : {caster.name}, Target : {target.name}, Effect : {data.uid}");
+        }
+
+        private void ActiveDamage(Unit caster, Unit target, UnitSkillEffectData data)
+        {
+            caster.Attack(target, data.value);
+        }
+        private void ActiveHeal(Unit caster, Unit target, UnitSkillEffectData data)
+        {
+            caster.Heal(target, data.value);
+        }
+
+        private void ActiveCount(Unit caster, Unit target, UnitSkillEffectData data)
+        {
+            int count = target.CountSkillEffect(data.targetUid);
+            if (count == Mathf.RoundToInt(data.value))
+            {
+                ActiveSkillEffectByUid(caster, target, data.trueUid);
+            }
+            else
+            {
+                ActiveSkillEffectByUid(caster, target, data.falseUid);
+            }
         }
     }
 

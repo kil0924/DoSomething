@@ -57,12 +57,50 @@ public class Test : MonoBehaviour
         unit.SetSpine(spineData);
     }
 
-    public bool isLeft;
     [ContextMenu( "Test2" )]
     public void Test2()
     {
-        Debug.Log("asdf");
-        unit.SetSide(isLeft);
-        isLeft = !isLeft;
+        var list = new List<TestClass>();
+        for (int i = 0; i < 10000000; i++)
+        {
+            list.Add(new TestClass());
+        }
+        var time = 0f;
+        time = Time.realtimeSinceStartup;
+        list.ForEach(x =>
+        {
+            if (x.type == TestType.test)
+            {
+                
+            }
+        });
+        float a = Time.realtimeSinceStartup - time;
+        Debug.Log($"Time:{a}");
+        time = Time.realtimeSinceStartup;
+        list.ForEach(x =>
+        {
+            if (x.type == TestType.test)
+            {
+                
+            }
+        });
+        float b = Time.realtimeSinceStartup - time;
+        Debug.Log($"Time:{b}");
+        
+        Debug.Log($"a / b = {a / b * 100}");
+    }
+
+    public enum TestType
+    {
+        origin,
+        test,
+    }
+    public class TestClass
+    {
+        public TestType type = TestType.origin;
+    }
+    public class TestClass2 : TestClass
+    {
+        public TestType type = TestType.test;
     }
 }

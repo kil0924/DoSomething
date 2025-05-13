@@ -114,6 +114,12 @@ namespace Rpg
             int count = _skillEffectByUid.GetValueOrDefault(uid, null)?.Count ?? 0;
             return count;
         }
+        
+        public int GetCount(SkillEffectType type)
+        {
+            int count = _skillEffect.GetValueOrDefault(type, null)?.Count ?? 0;
+            return count;
+        }
     }
     [Serializable]
     public class UnitSkillEffect
@@ -151,7 +157,6 @@ namespace Rpg
             }
         }
     }
-
     [AttributeUsage(AttributeTargets.Field)]
     public class SkillEffectAttribute : Attribute
     {

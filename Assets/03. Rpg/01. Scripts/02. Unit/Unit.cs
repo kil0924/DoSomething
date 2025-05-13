@@ -263,6 +263,10 @@ namespace Rpg
             return _skillEffectManager.GetCount(uid);
         }
 
+        public bool IsStun()
+        {
+            return _skillEffectManager.GetCount(SkillEffectType.Stun) > 0;
+        }
     }
 
     [Serializable]
