@@ -39,51 +39,83 @@ namespace Rpg
     {
         private Dictionary<UnitStatType, int> _statEffect = new Dictionary<UnitStatType, int>();
 
-        private Dictionary<SkillEffectType, List<UnitSkillEffect>> _skillEffect = new Dictionary<SkillEffectType, List<UnitSkillEffect>>();
         private Dictionary<int, List<UnitSkillEffect>> _skillEffectByUid = new Dictionary<int, List<UnitSkillEffect>>();
+        private Dictionary<int, SkillEffectType> _uidToType = new Dictionary<int, SkillEffectType>();
+        private Dictionary<SkillEffectType, List<int>> _typeToUid = new Dictionary<SkillEffectType, List<int>>();
         
         [SerializeField]
         public List<UnitSkillEffect> skillEffectDebug = new List<UnitSkillEffect>();
         public void AddSkillEffect(UnitSkillEffect effect)
         {
-            if (_skillEffect.ContainsKey(effect.type) == false)
-            {
-                _skillEffect.Add(effect.type, new List<UnitSkillEffect>());
-            }
-            _skillEffect[effect.type].Add(effect);
-
             if (_skillEffectByUid.ContainsKey(effect.uid) == false)
             {
                 _skillEffectByUid.Add(effect.uid, new List<UnitSkillEffect>());
             }
             _skillEffectByUid[effect.uid].Add(effect);
-            
-            CalcStatEffect(effect.type);
+            _uidToType[effect.uid] = effect.type;
+            if (_typeToUid.ContainsKey(effect.type) == false)
+            {
+                _typeToUid.Add(effect.type, new List<int>());
+            }
+            _typeToUid[effect.type].Add(effect.uid);
             
             skillEffectDebug.Add(effect);
+            
+            OnAddSkillEffect(effect);            
         }
-
         public void RemoveSkillEffect(UnitSkillEffect effect)
         {
-            _skillEffect[effect.type].Remove(effect);
             _skillEffectByUid[effect.uid].Remove(effect);
             
-            CalcStatEffect(effect.type);
-            
             skillEffectDebug.Remove(effect);
+
+            OnRemoveSkillEffect(effect);
+        }
+        
+        
+        private void OnAddSkillEffect(UnitSkillEffect effect)
+        {
+            if (SkillEffectLinker.GetStatType(effect.type) != UnitStatType.None)
+            {
+                CalcStatEffect(effect.type);    
+            }
+            else if (effect.type == SkillEffectType.Stun)
+            {
+                _onStun?.Invoke();
+            }
+        }
+        
+        private void OnRemoveSkillEffect(UnitSkillEffect effect)
+        {
+            if (SkillEffectLinker.GetStatType(effect.type) != UnitStatType.None)
+            {
+                CalcStatEffect(effect.type);
+            }
+            else if (effect.type == SkillEffectType.Stun)
+            {
+                _onStun?.Invoke();
+            }
         }
 
         private void CalcStatEffect(SkillEffectType type)
         {
             if (SkillEffectLinker.GetStatType(type) == UnitStatType.None)
                 return;
+
+            if (_typeToUid.TryGetValue(type, out var uids) == false)
+                return;
             
-            int count = _skillEffect[type].Count;
             var value = 0f;
-            for (int i = 0; i < count; i++)
+            foreach (var uid in uids)
             {
-                value += _skillEffect[type][i].value;
+                if (_skillEffectByUid.TryGetValue(uid, out var list) == false)
+                    continue;
+                foreach (var effect in list)
+                {
+                    value += effect.value;
+                }
             }
+            
             _statEffect[SkillEffectLinker.GetStatType(type)] = (int)value;
         }
 
@@ -94,7 +126,7 @@ namespace Rpg
 
         public void Clear()
         {
-            _skillEffect.Clear();
+            _skillEffectByUid.Clear();
             _statEffect.Clear();
             
             skillEffectDebug.Clear();
@@ -102,11 +134,12 @@ namespace Rpg
 
         public void ProcessTurn()
         {
-            foreach (var list in _skillEffect.Values)
+            foreach (var list in _skillEffectByUid.Values)
             {
                 list.ForEach(x => x.ExecuteTurn());
                 list.RemoveAll(x => x.isAlive == false);
             }
+            skillEffectDebug.RemoveAll(x => x.isAlive == false);
         }
 
         public int GetCount(int uid)
@@ -117,8 +150,24 @@ namespace Rpg
         
         public int GetCount(SkillEffectType type)
         {
-            int count = _skillEffect.GetValueOrDefault(type, null)?.Count ?? 0;
+            if (_typeToUid.TryGetValue(type, out var uids) == false)
+                return 0;
+            
+            var count = 0;
+            foreach (var uid in uids)
+            {
+                if (_skillEffectByUid.TryGetValue(uid, out var list) == false)
+                    continue;
+                
+                count += list.Count;
+            }
             return count;
+        }
+
+        private Action _onStun;
+        public void SetOnStun(Action onStun)
+        {
+            _onStun = onStun;
         }
     }
     [Serializable]

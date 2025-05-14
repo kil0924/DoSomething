@@ -32,6 +32,20 @@ namespace Rpg
             _stat = new UnitStat(resource.statData);
             _skillManager = new UnitSkillManager(resource.skillDataDict);
             _skillEffectManager = new UnitSkillEffectManager();
+            _skillEffectManager.SetOnStun(() =>
+            {
+                if (fsm.curState.State == UnitState.Idle)
+                {
+                    if (IsStun())
+                    {
+                        PlayAnimation("Groggy");
+                    }
+                    else
+                    {
+                        PlayAnimation("Idle");
+                    }
+                }
+            });
         }
 
         public void SetSide(bool isLeft)

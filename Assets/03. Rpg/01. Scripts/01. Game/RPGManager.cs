@@ -37,6 +37,7 @@ namespace Rpg
         
         protected override void Awake()
         {
+            Application.targetFrameRate = 60;
             base.Awake();
             
             random = new CustomRandom(0);

@@ -16,4 +16,4 @@ MonoBehaviour:
   aniName: Attack1_1
   cooldownTurns: 0
   type: 1
-  skillEffectList: 0100000005000000
+  skillEffectList: 01000000
