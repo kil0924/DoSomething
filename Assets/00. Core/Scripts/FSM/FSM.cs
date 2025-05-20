@@ -148,10 +148,6 @@ namespace Core.FSM
         {
             return _nextState;
         }
-        public virtual T CheckExitCondition()
-        {
-            return _state;
-        }
 
         public virtual void OnExit()
         {
