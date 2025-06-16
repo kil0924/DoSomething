@@ -1,0 +1,5 @@
+C:/git/DoSomething/.utmp/Debug/13182b3a/arm64-v8a/CMakeFiles/edit_cache.dir
+C:/git/DoSomething/.utmp/Debug/13182b3a/arm64-v8a/CMakeFiles/rebuild_cache.dir
+C:/git/DoSomething/.utmp/Debug/13182b3a/arm64-v8a/GameActivity/CMakeFiles/game.dir
+C:/git/DoSomething/.utmp/Debug/13182b3a/arm64-v8a/GameActivity/CMakeFiles/edit_cache.dir
+C:/git/DoSomething/.utmp/Debug/13182b3a/arm64-v8a/GameActivity/CMakeFiles/rebuild_cache.dir
