@@ -75,3 +75,7 @@ crashlytics-build.properties
 
 [Pp]rivate/
 [Pp]rivate.meta
+
+/99. ETC/
+
+.utmp/
