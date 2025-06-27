@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: UI Asset
+  m_EditorClassIdentifier: 
+  m_GroupName: UI Asset
+  m_GUID: 2b2874a2bba20cd469b26cab236edcc9
+  m_SerializeEntries:
+  - m_GUID: c7d3362e237514842b5c7cd86839437e
+    m_Address: Assets/99. ETC/Addressable Test/Canvas.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Preload
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e84d4eb89560ea84da221aa94e46c911
+    m_Address: Assets/99. ETC/Addressable Test/Canvas 1.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Preload
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: de81582595410f54ab298e8f343f44c8, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: b00e3cac8dd5db04b9790300a3bf9fc9, type: 2}
+    - {fileID: 11400000, guid: d3b3e43500bfd3440b66d2eda70561cd, type: 2}
+    - {fileID: 11400000, guid: fcf5f54f0152169479ec36b7237879c9, type: 2}

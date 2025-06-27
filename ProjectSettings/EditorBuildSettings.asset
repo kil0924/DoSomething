@@ -11,9 +11,13 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/03. Rpg/Rpg.unity
     guid: b50e387e9ba1807409be3f23acdf4663
-  - enabled: 1
+  - enabled: 0
     path: Assets/99. ETC/Performance Test/PerformanceTest.unity
     guid: 11f5c976fddd039469445b874e4e0bce
+  - enabled: 1
+    path: Assets/99. ETC/Addressable Test/Addressable.unity
+    guid: 75a36e077118df943a8d40e5969fb3c8
   m_configObjects:
+    com.unity.addressableassets: {fileID: 11400000, guid: f2eb16edc91554b4ea3797fded38262b, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0
